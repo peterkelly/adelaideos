@@ -1,0 +1,6271 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\lhead{COMP SCI 3004/7064 Operating Systems}
+\rhead{Semster 2, 2008}
+
+\usepackage{hyperref}
+\hypersetup{
+   bookmarksnumbered=true,
+   bookmarksopen=true,
+   bookmarksopenlevel=0,
+   colorlinks=true,
+   linkcolor=black,
+   citecolor=black,
+   urlcolor=blue,
+}
+
+\newcommand{\firstversion}{1}
+\newcommand{\libcversion}{2}
+\newcommand{\processesversion}{3}
+\newcommand{\pagingversion}{4}
+\newcommand{\syscallsversion}{5}
+\newcommand{\mallocversion}{6}
+\newcommand{\filedescversion}{7}
+\newcommand{\unixprocversion}{8}
+
+\date{}
+\end_preamble
+\use_default_options false
+\language english
+\inputencoding auto
+\font_roman times
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle fancy
+\listings_params "basicstyle={\ttfamily},columns=fullflexible,mathescape=false,showstringspaces=false"
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+COMP SCI 3004/7064 Operating Systems
+\begin_inset Newline newline
+\end_inset
+
+Kernel Development Guide
+\end_layout
+
+\begin_layout Author
+Peter Kelly
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{fancy}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+This guide is intended as a companion to the lecture slides used in the
+ OS course, and as introductory material that will prepare you for doing
+ the assignments.
+ It describes the workings of a simple operating system kernel which illustrates
+ some of the concepts covered in lectures.
+ You'll be working with this kernel in your assignments, and in order to
+ extend it you will need to understand how each part works.
+\end_layout
+
+\begin_layout Standard
+These notes are not a replacement for the textbook, which you are advised
+ to consult as well, as it goes into much more in-depth discussion and covers
+ a wider range of topics than are addressed here.
+ The textbook for this course is 
+\emph on
+Operating Systems Design and Implementation (3rd Edition)
+\emph default
+ by Tanenbaum and Woodhull.
+\end_layout
+
+\begin_layout Standard
+The example code discussed in these notes is available at:
+\end_layout
+
+\begin_layout Quote
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://adelaideos.sourceforge.net/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Getting-started"
+
+\end_inset
+
+Getting started
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+firstversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel, which can be obtained from the URL mentioned in the
+ introduction.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Up until now, all of the programs you have written run on top of an existing
+ operating system such as Linux.
+ This is the case for almost all software, in order to relieve the burden
+ from the programmer of implementing functionality like file storage, networking
+, memory management etc.
+ by putting this functionality into the OS.
+ When you write a program, you mainly focus on what it needs to do, and
+ simply make a call out to the OS whenever you need to access its functionality.
+\end_layout
+
+\begin_layout Standard
+When writing an operating system however, you don't have any of the useful
+ functionality that is normally available to application programmers.
+ It is the operating system itself that must implement these features.
+ When starting out, functions like 
+\family typewriter
+malloc
+\family default
+ and 
+\family typewriter
+printf
+\family default
+ aren't even present - since they're part of the C library, not the core
+ language itself.
+ As we go through this tutorial, we'll gradually add bits of functionality
+ in each stage.
+\end_layout
+
+\begin_layout Subsection
+Hello World
+\end_layout
+
+\begin_layout Standard
+Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+firstversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel contains the files listed in Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:helloworld-files"
+
+\end_inset
+
+.
+ The files 
+\family typewriter
+segmentation.c
+\family default
+ and 
+\family typewriter
+interrupts.c
+\family default
+ contain initialisation code that is necessary to set up the processor in
+ the right state so that it can execute our code and handle events like
+ key presses.
+ 
+\family typewriter
+start.s
+\family default
+ contains some low-level assembly code that is needed for the kernel to
+ work, but can't be coded in C.
+ You don't need to worry too much about these files for now; they're necessary,
+ but rely on things we won't be covering in detail in the course.
+ The only code of interest at this point is the code in 
+\family typewriter
+main.c
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="10" columns="2">
+<features>
+<column alignment="left" valignment="top" width="1.5in">
+<column alignment="left" valignment="top" width="3.5in">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Filename
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Description
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+Makefile
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Build script
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+mkbootimage.sh
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Script to create boot disk image
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+link.ld
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Linker script (used during compilation)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+constants.h
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Definitions of common constants used in the kernel
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+kernel.h
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Header file for functions defined in the kernel
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+segmentation.c
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Memory initialisation
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+interrupts.c
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Interrupt handling
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+start.s
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Assembly routines necessary for initialisation and interrupt handling
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family typewriter
+main.c
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Initial startup code and timer/interrupt handling.
+ This is where the main logic of the kernel goes.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:helloworld-files"
+
+\end_inset
+
+Files present in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+firstversion
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The most important function in 
+\family typewriter
+main.c
+\family default
+ is 
+\family typewriter
+kernel_main
+\family default
+.
+ This is the entry point for the kernel, i.e.
+ the first thing that gets executed when the kernel boots.
+ This first calls two initialisation routines, 
+\family typewriter
+setup_segmentation
+\family default
+ and 
+\family typewriter
+setup_interrupts
+\family default
+.
+ From here, we can basically do anything we want.
+ For demonstration purposes, we'll print the string 
+\begin_inset Quotes eld
+\end_inset
+
+Hello World
+\begin_inset Quotes erd
+\end_inset
+
+ to the screen.
+\end_layout
+
+\begin_layout Standard
+But how do we print? There is no 
+\family typewriter
+printf
+\family default
+ function, because 
+\family typewriter
+printf
+\family default
+ is part of the standard C library, and we don't have that available.
+ On a typical operating system, 
+\family typewriter
+printf
+\family default
+ does its formatting and invokes 
+\family typewriter
+write
+\family default
+, which is a system call to the kernel that outputs the string to the user's
+ terminal.
+ We don't have that either, because there is no concept of system calls
+ or terminals yet.
+ All we have is the hardware.
+\end_layout
+
+\begin_layout Standard
+The answer to how we can get stuff on screen is to write directly to video
+ memory.
+ On PCs, the video card is initially placed in 80x25 text mode, and has
+ its video memory located at address 
+\family typewriter
+0xB8000
+\family default
+ (hexadecimal notation for 753664).
+ Each character on screen is represented by two bytes, the first of which
+ is the actual character to display, and the second is the foreground and
+ background color.
+ At the top of 
+\family typewriter
+main.c
+\family default
+ there is a global variable 
+\family typewriter
+screen
+\family default
+ defined, which is an array starting at address 
+\family typewriter
+VIDEO_MEMORY
+\family default
+ (defined to 
+\family typewriter
+0xB8000
+\family default
+ in 
+\family typewriter
+constants.h
+\family default
+).
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+screenchar
+\family default
+ struct defined in 
+\family typewriter
+system.h
+\family default
+ contains fields for the character, foreground color, and background color,
+ so we can simply modify the elements of this array, and our text will appear
+ on screen.
+ The code in 
+\family typewriter
+kernel_main
+\family default
+ shown below prints out a string by iterating over the characters defined
+ in the string 
+\begin_inset Quotes eld
+\end_inset
+
+Hello World
+\begin_inset Quotes erd
+\end_inset
+
+, setting the appropriate element of the screen array to each character:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+  /* Output to screen by writing directly to video memory */
+\end_layout
+
+\begin_layout Plain Layout
+
+  char *str = "Hello World";
+\end_layout
+
+\begin_layout Plain Layout
+
+  for (x = 0; str[x]; x++)
+\end_layout
+
+\begin_layout Plain Layout
+
+    screen[x].c = str[x];
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And that's all we need to print Hello World.
+ There are some other functions defined in this file which we will come
+ back to in a moment, but first let's look at how to compile the kernel
+ and get it running.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Compiling-and-running"
+
+\end_inset
+
+Compiling and running
+\end_layout
+
+\begin_layout Standard
+To compile the program, simply type 
+\begin_inset Quotes eld
+\end_inset
+
+make
+\begin_inset Quotes erd
+\end_inset
+
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+These instructions assume you are using one of the Linux machines in the
+ CS labs.
+ They should work on most Linux distributions, provided you have gcc and
+ qemu installed.
+ It is also possible to compile and run the kernel under Windows and OS
+ X, but doing so requires some additional setup that we don't cover here.
+\end_layout
+
+\end_inset
+
+.
+ This compiles 
+\family typewriter
+start.s
+\family default
+ using the assembler, and all of the others using gcc.
+ This generates a set of 
+\family typewriter
+.o
+\family default
+ files which the linker, ld, compiles into a single file called 
+\family typewriter
+kernel.bin
+\family default
+.
+ Unlike normal compilation however, this is not a program that you can run
+ directly under Linux - it is designed to be executed as a standalone program
+ without any operating system underneath.
+\end_layout
+
+\begin_layout Standard
+In order to run the kernel, it's necessary to use a program called a 
+\emph on
+boot loader
+\emph default
+.
+ This is the first thing that runs when a computer starts, and is responsible
+ for loading the kernel file into memory and instructing the processor to
+ start executing it.
+ A boot loader is placed right at the very beginning of a disk, which is
+ where the computer looks for an operating system as soon as it starts.
+ For our testing we'll be using 
+\emph on
+GRUB
+\emph default
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.gnu.org/software/grub/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+, an open source boot loader that is used by most modern Linux distributions.
+\end_layout
+
+\begin_layout Standard
+The other thing you need of course is a computer to test on.
+ It's a bad idea to use your main machine for testing, because doing so
+ would require you to reboot each time you wan to test your kernel.
+ Using a separate machine is better, though it still requires rebooting,
+ which slows down your code-compile-test cycle.
+ For these reasons, and because it's not practical for everyone to use two
+ machines in the labs, we'll use a 
+\emph on
+virtual machine
+\emph default
+.
+ This is a program that runs on top of a regular OS and emulates the hardware.
+ The virtual machine we'll be using is 
+\emph on
+qemu
+\emph default
+
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.qemu.org
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+GRUB can work with any type of disk - such as a floppy disk, hard disk,
+ CD/DVD or USB memory stick.
+ However, since we will be running under qemu, we will simply use an image
+ file, and get qemu to pretend it is a floppy disk.
+ Installing GRUB requires root access, which you don't have on the lab machines,
+ so we've provided you with a disk image that is already set up, in the
+ file 
+\family typewriter
+grub.img
+\family default
+ in the source distribution.
+ You will need to copy this file into the appropriate directory for the
+ version of the kernel you are compiling.
+\end_layout
+
+\begin_layout Standard
+All you then have to do is copy your 
+\family typewriter
+kernel.bin
+\family default
+ file onto this disk image.
+ This can be done with the following command:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+mcopy -i grub.img kernel.bin ::
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For convenience, the command 
+\begin_inset Quotes eld
+\end_inset
+
+make boot
+\begin_inset Quotes erd
+\end_inset
+
+ will do this step for you (as well as compiling), so you don't have to
+ run separate commands each time.
+ Using 
+\begin_inset Quotes eld
+\end_inset
+
+make boot
+\begin_inset Quotes erd
+\end_inset
+
+ requires the 
+\family typewriter
+grub.img
+\family default
+ file to already be present in your source directory.
+\end_layout
+
+\begin_layout Standard
+Once the kernel has been copied to the disk image, you can then run it under
+ qemu using the following command
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+
+\family typewriter
+-fda
+\family default
+ tells qemu to use grub.img as the image for floppy drive A
+\end_layout
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+qemu -fda grub.img
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Interrupt handling
+\end_layout
+
+\begin_layout Standard
+Operating systems are based on an 
+\emph on
+event driven
+\emph default
+ programming model, where a program waits for external events to happen,
+ and then takes some action based on what event has occurred.
+ You may have used this general model before if you've done any GUI programming;
+ keyboard presses, mouse clicks, and so forth are common events.
+ In our kernel, we'll deal with two types of events: timer events, and keyboard
+ events.
+\end_layout
+
+\begin_layout Standard
+An 
+\emph on
+interrupt
+\emph default
+ is what happens when the kernel is notified of an event.
+ Most of the time, the processor is executing application code, or sitting
+ idle if there is nothing else to do.
+ When an interrupt occurs, the processor stops what it was doing, and begins
+ executing an 
+\emph on
+interrupt handler
+\emph default
+ function.
+ When the function returns, the processor goes back to whatever code it
+ was executing beforehand.
+ In a sense, it's similar to a situation in which you are working on an
+ assignment, and a friend interrupts you - you chat to them for a while,
+ and then go back to what you were doing before.
+\end_layout
+
+\begin_layout Standard
+On Intel x86 processors, each interrupt has a number in the range 0-255.
+ The first 32 are reserved for 
+\emph on
+exceptions
+\emph default
+, which are events relating to something that has gone wrong, such as a
+ divide by zero exception.
+ Another form of interrupt is an IRQ (interrupt request), which happens
+ when a piece of hardware wants to let the kernel know that something has
+ happened, such as a key being pressed.
+ There are 16 different IRQs, which in our kernel are mapped to interrupts
+ 32-47.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+setup_interrupts
+\family default
+ function called at the start of 
+\family typewriter
+kernel_main
+\family default
+ is responsible for telling the processor what function to call when an
+ interrupt occurs.
+ 
+\family typewriter
+interrupts.c
+\family default
+ contains a function called 
+\family typewriter
+interrupt_handler
+\family default
+ defined for this purpose, which inspects the interrupt number and takes
+ appropriate action.
+ For interrupt 32, which occurs when the timer fires, it calls the 
+\family typewriter
+timer_handler
+\family default
+ function in 
+\family typewriter
+main.c
+\family default
+.
+ For interrupt 33, corresponding to a keyboard event, it calls 
+\family typewriter
+keyboard_handler
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+The remainder of the code in 
+\family typewriter
+main.c
+\family default
+ demonstrates how to handle key press events and print whatever the user
+ types in on screen.
+ This implements basic terminal functionality, whereby the program keeps
+ track of the cursor position on screen, and moves it whenever a character
+ is printed.
+ It also scrolls all of the text on the screen whenever the cursor goes
+ beyond the last line.
+\end_layout
+
+\begin_layout Standard
+When 
+\family typewriter
+keyboard_handler
+\family default
+ is called, it is passed a parameter called 
+\family typewriter
+scancode
+\family default
+, which indicates which key the event relates to, and whether the event
+ was caused by a key press or key release.
+ The latter is determined by inspecting the last bit, which is extracted
+ by masking 
+\family typewriter
+scancode
+\family default
+ with 
+\family typewriter
+0x80
+\family default
+.
+ The actual key code is obtained by masking the 
+\family typewriter
+scancode
+\family default
+ variable with 
+\family typewriter
+0x7F
+\family default
+, which returns all but the most significant bit.
+\end_layout
+
+\begin_layout Standard
+One complication is that the scan code does not correspond directly to a
+ character, so we cannot print it as-is.
+ Instead, we use it as an index into a lookup table, which we can use to
+ find out what character it corresponds to.
+ This is achieved by looking in the 
+\family typewriter
+kbdmap
+\family default
+ array, defined in 
+\family typewriter
+interrupts.c
+\family default
+.
+ Not all key codes correspond to characters, e.g.
+ the alt/shift keys and arrow keys, so these will just be printed as spaces.
+ In the case of shift, we treat this specially, keeping track of whether
+ it is currently pressed or not.
+ If it is, the character is taken from 
+\family typewriter
+kbdmap_shift
+\family default
+ instead, which contains the uppercase versions of all keys.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+void keyboard_handler(regs *r, unsigned char scancode)
+\end_layout
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\begin_layout Plain Layout
+
+  unsigned char key = scancode & 0x7F;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  if (scancode & 0x80) {
+\end_layout
+
+\begin_layout Plain Layout
+
+    /* key release */
+\end_layout
+
+\begin_layout Plain Layout
+
+    if (KEY_SHIFT == key)
+\end_layout
+
+\begin_layout Plain Layout
+
+      shift_pressed = 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  else {
+\end_layout
+
+\begin_layout Plain Layout
+
+    /* key press */
+\end_layout
+
+\begin_layout Plain Layout
+
+    if (KEY_SHIFT == key) {
+\end_layout
+
+\begin_layout Plain Layout
+
+      shift_pressed = 1;
+\end_layout
+
+\begin_layout Plain Layout
+
+    }
+\end_layout
+
+\begin_layout Plain Layout
+
+    else {
+\end_layout
+
+\begin_layout Plain Layout
+
+      char c = shift_pressed ? kbdmap_shift[key] : kbdmap[key];
+\end_layout
+
+\begin_layout Plain Layout
+
+      write_to_screen(&c,1);
+\end_layout
+
+\begin_layout Plain Layout
+
+    }
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The code for 
+\family typewriter
+write_to_
+\family default
+screen is
+\family typewriter
+ 
+\family default
+relatively straightforward; just have a look at the file for further details.
+\end_layout
+
+\begin_layout Standard
+Another type of interrupt we can handle is the 
+\emph on
+timer interrupt
+\emph default
+.
+ This occurs at regular intervals, the frequency of which can be configured
+ by the kernel.
+ In the 
+\family typewriter
+setup_interrupts
+\family default
+ function, we arrange for timer interrupts to occur 50 times per second.
+ This means that once every 20ms, the 
+\family typewriter
+timer_handler
+\family default
+ function will be called.
+ As a simple demonstration of this, we just update a variable which counts
+ the number of ticks that have occurred, and print out a message every 5
+ seconds.
+ The timer interrupt is crucial for implementing multitasking, which is
+ the topic of Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Multitasking"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:C-library-functions"
+
+\end_inset
+
+C library functions
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+libcversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+libc.c
+\family default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When programming in C, you almost always use functions like 
+\family typewriter
+malloc
+\family default
+, 
+\family typewriter
+printf
+\family default
+, and 
+\family typewriter
+strlen
+\family default
+ that are part of the C library.
+ The C library is something that has to be available on a particular operating
+ system for these functions to work - a program compiled by itself running
+ directly on hardware doesn't automatically have them available.
+ These libraries are present on Linux and other UNIX systems, but not on
+ our kernel.
+ Thus, we need to implement all of the library functions that we need to
+ use.
+\end_layout
+
+\begin_layout Standard
+Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+libcversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+ of the kernel contains a file called 
+\family typewriter
+libc.c
+\family default
+ in which a few of the more important C library functions are provided.
+ This includes 
+\family typewriter
+memset
+\family default
+, 
+\family typewriter
+memcpy
+\family default
+, 
+\family typewriter
+strlen
+\family default
+, 
+\family typewriter
+strcmp
+\family default
+, and 
+\family typewriter
+printf
+\family default
+.
+ This is just a basic set in order to be able to perform common programming
+ operations like printing formatted text to screen.
+ Real C libraries are many times larger than this, and typically rely on
+ operating system features that we haven't implemented yet.
+ This will be enough for demonstration purposes however.
+\end_layout
+
+\begin_layout Standard
+We will not go into detail about the implementation of these functions,
+ as they are all reasonably straightforward C code that isn't directly related
+ to OS programming.
+\end_layout
+
+\begin_layout Standard
+One thing to note about this code however is that there are actually two
+ versions of 
+\family typewriter
+printf
+\family default
+ - the regular one, and another called 
+\family typewriter
+kprintf
+\family default
+.
+ At this point, the two are identical.
+ However, in later versions of the kernel that support the distinction between
+ user mode and kernel mode, 
+\family typewriter
+kprintf
+\family default
+ will be used for code within the kernel, and 
+\family typewriter
+printf
+\family default
+ for code in user processes.
+\end_layout
+
+\begin_layout Subsection
+Comparing versions
+\end_layout
+
+\begin_layout Standard
+If you want to see what has changed between two different versions of the
+ code, you can use the 
+\family typewriter
+diff
+\family default
+ command, e.g.:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+diff -ur version1 version2
+\end_layout
+
+\begin_layout Standard
+For each of the files that is present in both versions, this will show you
+ a list of changes that have been made.
+ For new files, 
+\family typewriter
+diff
+\family default
+ will print out a message like the following:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+Only in version2: user.h
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Multitasking"
+
+\end_inset
+
+Multitasking
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+processesversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+process.c
+\family default
+ and 
+\family typewriter
+main.c
+\family default
+.
+\end_layout
+
+\begin_layout Plain Layout
+See also: Tanenbaum, sections 1.3.1, 2.1, 2.4, and 2.5.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Modern operating systems support 
+\emph on
+multitasking
+\emph default
+, which is the ability to have multiple processes running at the same time.
+ Each process runs independently of the others, and is selectively given
+ access to the CPU and memory in order to execute its instructions.
+ It is common for many processes to be running at once, each of which does
+ something different.
+ For example, you may have a web browser, spreadsheet, and terminal program
+ all running on your computer at the same time.
+\end_layout
+
+\begin_layout Standard
+Although we often talk about multiple processes running 
+\begin_inset Quotes eld
+\end_inset
+
+at the same time
+\begin_inset Quotes erd
+\end_inset
+
+, this is in fact an illusion.
+ A single processor is only capable of doing one thing at a time
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Machines with multiple processors or cores 
+\emph on
+can
+\emph default
+ actually do multiple things at the same time, but time slicing is still
+ used to cater for situations in which there are more running processes
+ than cores.
+ In our discussion here, we only consider the case of a single-core processor.
+\end_layout
+
+\end_inset
+
+, so it is necessary for the kernel to provide an abstraction which makes
+ it look as if several processes are running concurrently, but in reality
+ they are actually taking turns in using the processor.
+ This technique is called 
+\emph on
+time slicing
+\emph default
+, and involves running each process exclusively for very short periods of
+ time, and rapidly switching between them.
+ These context switches happen many times per second, so as far as the user
+ can see, it looks like all they are all executing simultaneously.
+\end_layout
+
+\begin_layout Standard
+A process exists as an object within the kernel that has several pieces
+ of state associated with it.
+ This state includes a process identifier, the memory in use by the process,
+ and the saved register values.
+ When a process is running, it has exclusive access to the processor, and
+ operates by accessing data in its own memory area.
+ When it is not running, the register values it was using are saved in its
+ state.
+\end_layout
+
+\begin_layout Standard
+Each process may either be 
+\emph on
+ready
+\emph default
+, meaning that it has work that it can carry out immediately if given access
+ to the processor, or 
+\emph on
+suspended
+\emph default
+, meaning that it is waiting for some event to occur before it can continue
+ execution.
+ The kernel maintains separate lists of ready and suspended processes.
+ When a context switch occurs, the kernel will only switch to a process
+ that is ready, since a suspended process cannot resume execution until
+ the event it is waiting on happens.
+ Examples of events that a process may wait for include the user entering
+ some input, data becoming available over a network connection, or another
+ process terminating.
+\end_layout
+
+\begin_layout Standard
+Every process has a private area of memory associated with it, which it
+ can use for storing data used during execution, such as variables.
+ In most operating systems, there are generally several different memory
+ regions, or 
+\emph on
+segments
+\emph default
+, which comprise this private memory.
+ The most important of these is the 
+\emph on
+stack segment
+\emph default
+, which is used to store information about function calls and local variables.
+ The 
+\emph on
+data segment
+\emph default
+ contains the process's heap, which used for dynamic memory allocation,
+ and is managed by the 
+\family typewriter
+malloc
+\family default
+ and 
+\family typewriter
+free
+\family default
+ functions.
+ The 
+\emph on
+text segment
+\emph default
+ contains the code that the program is executing, as well as any global
+ variables.
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:processmem"
+
+\end_inset
+
+ shows a conceptual view of memory for a system that is running three processes.
+ Each process has its own stack, data, and text segments, which are separate
+ from the others.
+ Additionally, there is an area of memory set aside solely for use by the
+ kernel, and is used to store information such as the process objects themselves
+, and any other variables and data structures used by the kernel.
+ With memory protection, discussed in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Virtual-memory"
+
+\end_inset
+
+, processes are explicitly prevented from accessing either the kernel memory
+ or the private memory of other processes.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement tb
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename processmem.eps
+	width 66col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:processmem"
+
+\end_inset
+
+Memory areas used by the kernel and 3 processes
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Implementation
+\end_layout
+
+\begin_layout Standard
+For our initial implementation of processes, we only give each a stack segment.
+ The data segment is only necessary if dynamic allocation is supported,
+ which we shall look at in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Dynamic-memory-allocation"
+
+\end_inset
+
+.
+ A text segment is needed if the executable processes is loaded from a filesyste
+m, but for now we shall only support processes that run code that is already
+ part of the kernel, and thus does not require a separate private text segment.
+\end_layout
+
+\begin_layout Standard
+Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+processesversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel contains the basic mechanisms to support multiple processes.
+ The central data structure used for this is the 
+\family typewriter
+process
+\family default
+ struct, which is shown below.
+ An array of these called 
+\family typewriter
+processes
+\family default
+ is defined in 
+\family typewriter
+process.c
+\family default
+; this array can store up to 32 elements.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct process {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pid_t pid;
+\end_layout
+
+\begin_layout Plain Layout
+
+  int exists;
+\end_layout
+
+\begin_layout Plain Layout
+
+  regs saved_regs;
+\end_layout
+
+\begin_layout Plain Layout
+
+  int ready;
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct process *prev;
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct process *next;
+\end_layout
+
+\begin_layout Plain Layout
+
+  unsigned int stack_start;
+\end_layout
+
+\begin_layout Plain Layout
+
+  unsigned int stack_end;
+\end_layout
+
+\begin_layout Plain Layout
+
+} process;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+pid
+\family default
+ field is a unique number which identifies the process, and can be used
+ to look up the process object in the 
+\family typewriter
+processes
+\family default
+ array.
+ The 
+\family typewriter
+exists
+\family default
+ field is used to indicate whether or not this array element is in use,
+ and is used when locating an empty slot in the array.
+ 
+\family typewriter
+saved_regs
+\family default
+ records the value of all CPU registers in the state that they were in when
+ the process was last executing, and is used during a context switch to
+ restore the CPU state so that it can continue executing the process where
+ it last left off.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+ready
+\family default
+ field records whether or not the process is ready to execute code as soon
+ as possible; it is only a candidate for scheduling if this is set.
+ The 
+\family typewriter
+ready
+\family default
+ and 
+\family typewriter
+suspended
+\family default
+ lists in 
+\family typewriter
+process.c
+\family default
+ contain all of the processes in the respective state; the 
+\family typewriter
+prev
+\family default
+ and 
+\family typewriter
+next
+\family default
+ fields in this struct are used to store the forward and backward links
+ in these doubly-linked lists.
+\end_layout
+
+\begin_layout Standard
+Finally, the 
+\family typewriter
+stack_start
+\family default
+ and 
+\family typewriter
+stack_end
+\family default
+ fields store the bounds of the stack region in memory.
+ Since each process is given a different area of memory for its stack, these
+ will be different for each process.
+ On x86 processors, the stack grows downwards, so the stack will begin at
+ 
+\family typewriter
+stack_end
+\family default
+, and will increase downwards towards 
+\family typewriter
+stack_start
+\family default
+ according to the depth of function calls made by the process.
+\end_layout
+
+\begin_layout Subsection
+Creating processes
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+start_process
+\family default
+ function defined in 
+\family typewriter
+process.c
+\family default
+ creates a new process and adds it to the list of ready processes.
+ This takes care of finding an unused element in the 
+\family typewriter
+processes
+\family default
+ array, determining the process id, allocating memory for the stack, and
+ setting up the initial register values.
+ The only parameter to the function is the start address of the process,
+ which is the address in memory of the first instruction to be executed
+ by the process.
+ In C, we can get the address of a function's first instruction simply by
+ using a function pointer, and so when calling 
+\family typewriter
+start_process
+\family default
+ it is sufficient to simply specify the name of the function that the process
+ should execute, e.g.:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+  /* Start two processes */
+\end_layout
+
+\begin_layout Plain Layout
+
+  start_process(process_a);
+\end_layout
+
+\begin_layout Plain Layout
+
+  start_process(process_b);
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In 
+\family typewriter
+main.c
+\family default
+, there are two functions, 
+\family typewriter
+process_a
+\family default
+ and 
+\family typewriter
+process_b
+\family default
+, which are used as test processes.
+ Both of these simply execute in a loop, printing out a line of text at
+ regular intervals.
+ Between each print statement, they perform some computation by executing
+ an empty loop a large number of times, just for the purpose of making some
+ use of the processor.
+ When you run this version of the kernel, you will see the interleaved output
+ of both processes.
+\end_layout
+
+\begin_layout Subsection
+Context switches
+\end_layout
+
+\begin_layout Standard
+The most important part of implementing multi-tasking is 
+\emph on
+context switching
+\emph default
+, which is the act of changing the process that is currently being executed
+ by the CPU.
+ This must be done at regular intervals, and without each process having
+ to do anything.
+ We perform context switching within the 
+\family typewriter
+context_switch
+\family default
+ function defined in 
+\family typewriter
+process.c
+\family default
+.
+ This is called by the 
+\family typewriter
+timer_handler
+\family default
+ function in 
+\family typewriter
+main.c
+\family default
+, which is executed 50 times per second as a result of interrupts generated
+ by the system clock.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:timeslicing"
+
+\end_inset
+
+ shows an example of the way in context switching occurs between processes,
+ and how suspended processes are ignored when making scheduling decisions.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename timeslicing.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:timeslicing"
+
+\end_inset
+
+Time slicing
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+context_switch
+\family default
+ function takes a 
+\family typewriter
+regs
+\family default
+ object as a parameter, containing the values of all CPU registers as they
+ were when the timer interrupt occurred.
+ The basic steps to perform a switch from this point are as follows:
+\end_layout
+
+\begin_layout Enumerate
+Copy the CPU register values to the 
+\family typewriter
+saved_regs
+\family default
+ field of the current process
+\end_layout
+
+\begin_layout Enumerate
+Select another process to execute from the 
+\family typewriter
+ready
+\family default
+ list, and update the 
+\family typewriter
+current_process
+\family default
+ variable to point to this
+\end_layout
+
+\begin_layout Enumerate
+Copy the register values from the 
+\family typewriter
+saved_regs
+\family default
+ field of the new current process to the 
+\family typewriter
+regs
+\family default
+ object, which will be transferred to the actual CPU registers after the
+ interrupt handler returns.
+\end_layout
+
+\begin_layout Standard
+One complication with this is that the function must also handle the case
+ where there is no current process, e.g.
+ if the kernel has just started, or all processes are suspended.
+ In this case, it sets up a temporary stack and causes the CPU to jump into
+ an idle loop, using the 
+\family typewriter
+idle
+\family default
+ function defined in 
+\family typewriter
+start.s
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+Although most of the logic to change to a different process is implemented
+ in 
+\family typewriter
+context_switch
+\family default
+, there is a bit more to the story, which requires understanding what happens
+ when an interrupt
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+An interrupt is essentially the hardware equivalent of a signal
+\end_layout
+
+\end_inset
+
+ occurs.
+ The CPU maintains a table of interrupt handlers, each of which corresponds
+ to a function that is called in response to a particular event occurring,
+ such as a timer interrupt or key press.
+ The assembly code in 
+\family typewriter
+start.s
+\family default
+ contains a single handler function that is used for all interrupts.
+ It saves all CPU registers to a 
+\family typewriter
+regs
+\family default
+ structure on the stack, calls the 
+\family typewriter
+interrupt_handler
+\family default
+ function in 
+\family typewriter
+interrupts.c
+\family default
+, and then subsequently restores the registers from the (potentially modified)
+ 
+\family typewriter
+regs
+\family default
+ structure back into the CPU.
+ It is this 
+\family typewriter
+regs
+\family default
+ structure that the 
+\family typewriter
+context_switch
+\family default
+ operates on, allowing us to implement the higher-level logic in C.
+\end_layout
+
+\begin_layout Subsection
+Suspending and resuming
+\end_layout
+
+\begin_layout Standard
+In order to suspend or resume a process, it is sufficient to simply change
+ the 
+\family typewriter
+ready
+\family default
+ field of the appropriate 
+\family typewriter
+process
+\family default
+ object, and then transfer it to the 
+\family typewriter
+ready
+\family default
+ or 
+\family typewriter
+suspended
+\family default
+ lists.
+ These actions are performed by two functions defined in 
+\family typewriter
+process.c
+\family default
+, named 
+\family typewriter
+suspend_process
+\family default
+ and 
+\family typewriter
+resume_process
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+timer_handler
+\family default
+ function in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+processesversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel demonstrates suspension and resumption by performing these
+ actions at pre-defined time intervals, so you can see the effects on the
+ processes when running the kernel.
+ This also demonstrates the 
+\family typewriter
+kill_process
+\family default
+ function, which gets rid of a process altogether.
+ Note that after suspending or killing a process, a context switch should
+ be performed, so that if that process was the current one, then a new one
+ will be switched to instead.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+Exercises (optional)
+\end_layout
+
+\begin_layout Enumerate
+Add some more functions to 
+\family typewriter
+main.c
+\family default
+, and start a process running for each of them.
+ Observe how this affects the speed at which the other processes run, since
+ the CPU must be shared between a larger number of processes.
+\end_layout
+
+\begin_layout Enumerate
+Within 
+\family typewriter
+keyboard_handler
+\family default
+, allow the user to suspend and resume processes by pressing the numeric
+ key corresponding to their process identifier.
+\end_layout
+
+\begin_layout Enumerate
+Implement a mechanism that allows one of the processes to read input from
+ the user, and then print out responses.
+ The process should be suspended while it is waiting for a key to be pressed,
+ and resumed when a key press event occurs.
+ See if you can correctly handle the case where multiple key presses occur
+ before the process gets its next time slice.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Virtual-memory"
+
+\end_inset
+
+Paging and virtual memory
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagingversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+page.c
+\family default
+, with a few changes made in 
+\family typewriter
+start_process
+\family default
+, located in 
+\family typewriter
+process.c
+\family default
+.
+\end_layout
+
+\begin_layout Plain Layout
+See also: Tanenbaum, sections 4.1-4.6
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Multitasking"
+
+\end_inset
+
+, we discussed giving each process its own area of private memory, and the
+ possibility of implementing protection that prevents one process from accessing
+ the private memory of another.
+ Additionally, it is useful for the kernel to provide an additional abstraction
+ which allows processes to reference memory as if they had direct access
+ to it, but instead ensuring that all data a process uses is stored within
+ its own private memory.
+ The way in which we can achieve both of these goals is to use 
+\emph on
+virtual memory
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+By default, software running on a processor accesses memory according to
+ a 
+\emph on
+physical address
+\emph default
+, which is the actual location in memory at which a particular piece of
+ data is stored.
+ An example of where an address may be used is when an attempt is made to
+ change the value of a global variable; the software executes a write instructio
+n for the address of that variable, and the processor arranges for the specified
+ data to be stored at that particular memory location.
+ Another example is when a function call is made; a call instruction is
+ executed that specifies the memory address of the function to be called.
+\end_layout
+
+\begin_layout Standard
+If there is only one program ever running on a machine, with exclusive access
+ to the hardware, then this is quite acceptable.
+ When a program is loaded into memory, the addresses referenced by the instructi
+ons in the compiled code are used as the locations of functions and global
+ variables.
+ However, this becomes a problem when there are multiple programs running,
+ because each program may expect different things to be at a particular
+ address.
+\end_layout
+
+\begin_layout Standard
+The solution to this problem is 
+\emph on
+virtual memory
+\emph default
+, a technique which allows each process to be under the illusion that it
+ has direct access to memory, when in fact the memory used is stored in
+ a different physical location to that of all other processes.
+ Virtual memory makes a distinction between 
+\emph on
+logical addresses
+\emph default
+, which are used by the process to refer to particular pieces of data in
+ memory, and 
+\emph on
+physical addresses
+\emph default
+, which are the actual locations at which the data stored.
+ A mapping exists between these two, such that when an instruction attempts
+ to read or write data from a particular logical address, this is translated
+ by the processor into the corresponding physical address, to which the
+ read or write is then performed.
+ Each process has a separate mapping, such that a particular logical address
+ in one process maps to a different physical location than the same logical
+ address in a different process.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:logphys"
+
+\end_inset
+
+ shows an example of this, with two processes writing to the same logical
+ address, which is translated into different physical addresses.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement tbh
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename logphys.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:logphys"
+
+\end_inset
+
+Logical vs.
+ physical addressing
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Page tables
+\end_layout
+
+\begin_layout Standard
+The way in which the logical to physical address mappings are implemented
+ is through the use of 
+\emph on
+page tables
+\emph default
+.
+ The address space is divided up into 
+\emph on
+pages
+\emph default
+, which on x86 processors are 4kb in size.
+ For each page in the logical address space, there is an entry in the page
+ table that specifies which page in the physical address space the logical
+ page corresponds to.
+\end_layout
+
+\begin_layout Standard
+In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:pagetable"
+
+\end_inset
+
+, a page table with mappings for the first 8 pages (32kb) of memory is shown.
+ The entries in the right-hand column specify the start of a 4kb physical
+ address range that the page corresponds to.
+ In this example, the logical address 0x4782 corresponds to physical address
+ 0x516782, because the logical address resides within page 4, which is mapped
+ to a physical page located at 0x516000.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement tbh
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename pagetable.eps
+	scale 75
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:pagetable"
+
+\end_inset
+
+Single level page table
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Because the address space supported by most processors is very large, it
+ is not generally feasible to use a single page table to cover all possible
+ pages.
+ For example, 32-bit x86 processors support an address range of 4Gb, correspondi
+ng to a page table with 1 million entries.
+ With each entry taking up 32 bits of memory, this would require 4mb per
+ page table, which would consume a large amount of memory if many processes
+ were active, since each requires a separate page table.
+\end_layout
+
+\begin_layout Standard
+To reduce space requirements, it is more common to use a multi-level strategy,
+ in which there are multiple page tables covering subsets of the address
+ range, and a 
+\emph on
+page directory
+\emph default
+, which contains the addresses of pages tables for each range.
+ In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:pagetable2"
+
+\end_inset
+
+, we have a page directory in which each entry contains the address of a
+ page table containing mappings for 8 pages.
+ The first entry points to a page table at address 0x015000, containing
+ the mappings for pages 0-7 as above.
+ The second entry points to another page table, this time at address 0x022000,
+ which contains mappings for pages 8-15.
+ Because there are no mappings for pages 14 and onwards, there are no page
+ tables allocated for later page ranges, which saves memory.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename pagetable2.eps
+	scale 75
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:pagetable2"
+
+\end_inset
+
+Multi-level page tables
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The x86 architecture uses this strategy for page mappings.
+ Each page directory is an array of 1024 32-bit values, each containing
+ the address of the page table for a particular page range, if it exists.
+ Similarly, a page table is an array of 1024 values, each of which contains
+ the physical address to which the corresponding page maps, if any.
+ This scheme can support up to 1024
+\begin_inset Formula $\times$
+\end_inset
+
+1024 4kb pages, i.e.
+ 4gb of memory.
+\end_layout
+
+\begin_layout Standard
+The entries within both the page directory and page table are not just addresses
+, but also contain several flags.
+ Since each page is aligned on a 4096 byte boundary, the lower 12 bits of
+ the entry can be used to store flags, which can be masked out in order
+ to obtain the address.
+ The three flags of most interest are:
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+present
+\emph default
+ - indicates whether this entry is present.
+ For page directories, if this flag is not set, it means there is no table
+ for the corresponding set of pages.
+ For page tables, when this flag is not set, it indicates that the corresponding
+ page is not mapped.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+user
+\emph default
+ - indicates whether or not this page is accessible from user mode (discussed
+ in the next section)
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+writable
+\emph default
+ - indicates whether or not the page can be written to by user mode code
+ running within a process.
+ If this is not set, but the page is user accessible, then user mode code
+ may read from this page but not write to it.
+\end_layout
+
+\begin_layout Standard
+The kernel can use this mechanism to selectively control which areas of
+ memory a process is allowed to access.
+ When a process is created, it is given a new page directory, which is initially
+ empty.
+ Mappings are established for common memory that is shared by all processes
+ (e.g.
+ the executable code within the kernel), and mappings to the private stack
+ area for that process is also set up.
+ Since the memory of other processes is not mapped within the page directory,
+ it is not possible for the process to access the memory of others.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:User-kernel-mode"
+
+\end_inset
+
+User mode and kernel mode
+\end_layout
+
+\begin_layout Standard
+The notion of using memory protection raises an important issue: If we are
+ to prevent a process from interfering with other parts of the system, then
+ how do we do this while still enabling the kernel to take privileged actions?
+ The answer to this problem lies in a hardware feature of the processor
+ called 
+\emph on
+protection levels
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+At any given point in time, the processor runs in a particular protection
+ level.
+ Processor architectures differ in how many levels they provide, but there
+ are generally at least two: 
+\emph on
+user mode
+\emph default
+ and 
+\emph on
+kernel mode
+\emph default
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Sometimes known as 
+\emph on
+supervisor mode
+\end_layout
+
+\end_inset
+
+.
+ User mode permits only a limited set of operations to be executed; all
+ normal computation facilities that applications need are allowed, but privilege
+d operations such as accessing hardware devices, disabling paging, or shutting
+ down the system cannot be carried out.
+ Kernel mode allows full access to the whole system; code running in this
+ mode can do anything it likes.
+\end_layout
+
+\begin_layout Standard
+Operating systems that support protected memory always run processes in
+ user mode.
+ This allows the kernel to maintain strict control over what each process
+ is allowed to do, and to implement additional security facilities such
+ as user accounts and filesystem permissions on top of these basic facilities.
+ All operations such as writing to the screen, reading data from the disk
+ etc.
+ must be performed by the kernel, and these actions can be requested by
+ processes.
+ The mechanisms for making these requests are called 
+\emph on
+system calls
+\emph default
+, which are discussed further in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:System-calls"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+As far as paging is concerned, the distinction between kernel and user modes
+ is relevant for understanding how virtual memory provides security.
+ It is not sufficient to just set up page tables for a process that only
+ map its private memory, since the process could simply disable paging or
+ switch to a different page directory, which would enable it to access other
+ areas of physical memory.
+ Processes must be prevented from doing this by having them run in user
+ mode, and only allowing the kernel to manipulate page mappings.
+ This way, only the kernel can decide what memory a process is allowed to
+ access.
+\end_layout
+
+\begin_layout Standard
+The permission bits set in the page table entries determine the circumstances
+ under which a page may be accessed.
+ The 
+\emph on
+user
+\emph default
+ bit determines whether or not code running in user mode has access to the
+ page - this is normally set, but for some parts of memory such as certain
+ private data structures in the kernel, this may be disabled.
+ Having page tables set up in this manner enables the kernel to still use
+ the page mappings for a particular process when executing a system call,
+ while still being able to access its own private memory.
+ If the 
+\emph on
+user
+\emph default
+ bit is set, then the process can optionally be given read-only access to
+ the page; this is controlled by the 
+\emph on
+writable
+\emph default
+ bit.
+ The kernel can always write to all pages.
+\end_layout
+
+\begin_layout Standard
+In version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagingversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel, the last action taken by 
+\family typewriter
+kernel_main
+\family default
+ is not to simply enable interrupts, but also to enter user mode.
+ When it does this, the processor will now be running in user mode by default,
+ and only switch to kernel mode during interrupt handling.
+ This causes the processor to enforce the above-mentioned security restrictions
+ on all processes.
+ Whenever a process violates these restrictions, an exception interrupt
+ is raised, enabling the kernel to deal with the situation in whatever way
+ it chooses.
+ One example of these exceptions is a 
+\emph on
+page fault
+\emph default
+.
+\end_layout
+
+\begin_layout Subsection
+Page faults
+\end_layout
+
+\begin_layout Standard
+The kernel needs a way to handle the situation in which a process tries
+ to access memory it does not have access to, either because there is no
+ mapping in the page table, or because it violates the permissions of the
+ relevant page.
+ This situation is known as a 
+\emph on
+page fault
+\emph default
+, and causes an interrupt to occur, which the kernel can respond to using
+ the usual interrupt handling mechanisms.
+ The normal action to take in such a situation is to simply kill the process.
+ You will have undoubtedly have seen this happen sometimes when working
+ in C, when your program tries to access an unmapped area of memory, e.g.
+ by dereferencing a NULL pointer.
+\end_layout
+
+\begin_layout Standard
+Page faults are also useful for implementing 
+\emph on
+swapping
+\emph default
+, which is where the kernel is capable of providing processes with the illusion
+ that they have access to more memory than is physically available, by temporari
+ly storing some parts of memory on disk.
+ This is sometimes (confusingly) what people refer to when they use the
+ term 
+\begin_inset Quotes eld
+\end_inset
+
+virtual memory
+\begin_inset Quotes erd
+\end_inset
+
+.
+ A page fault may occur because a process tries to access part of its memory
+ that it does actually have permission to access, but is stored on disk.
+ The kernel then reads the page from disk, stores it in physical memory,
+ and updates the page table to point to its new physical location.
+ Our demonstration kernel does not support swapping, though most mainstream
+ operating systems do.
+\end_layout
+
+\begin_layout Subsection
+Implementation
+\end_layout
+
+\begin_layout Standard
+Paging is a hardware feature - the processor itself implements all of the
+ logic necessary to translate logical addresses to physical addresses when
+ a memory access occurs, and to enforce the permissions set within page
+ tables.
+ Thus, most of the hard work is already done for us, and all the kernel
+ needs to do is to manage the allocation of physical memory, and set up
+ the page tables for each process.
+ Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagingversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel includes a file called 
+\family typewriter
+page.c
+\family default
+ which contains the necessary functions to do this.
+\end_layout
+
+\begin_layout Subsubsection
+Page allocation
+\end_layout
+
+\begin_layout Standard
+The first two functions in 
+\family typewriter
+page.c
+\family default
+ are 
+\family typewriter
+alloc_page
+\family default
+ and 
+\family typewriter
+dealloc_page
+\family default
+.
+ These manage all of the physical memory with the exception of the first
+ 6mb, which we have chosen to set aside for the kernel to use for its own
+ purposes.
+ Since these functions are actually memory allocators themselves, they do
+ not call 
+\family typewriter
+malloc
+\family default
+ in order to get hold of memory to use - in fact 
+\family typewriter
+malloc
+\family default
+ doesn't exist in our kernel yet.
+ Instead, they just access the memory directly, starting from the 6mb mark,
+ going upwards until the end of physical memory.
+ The 
+\family typewriter
+page_end
+\family default
+ variable declared at the top of this file stores the end of the highest-numbere
+d physical page that has been allocated so far; everything above this is
+ considered free memory that is able to be used for new pages.
+\end_layout
+
+\begin_layout Standard
+In addition to the 
+\family typewriter
+page_end
+\family default
+ variable, 
+\family typewriter
+alloc_page
+\family default
+ and 
+\family typewriter
+dealloc_page
+\family default
+ also maintain a list of free pages.
+ The first time a particular physical page is allocated, it will be obtained
+ from the value currently in 
+\family typewriter
+page_end
+\family default
+, which is subsequently incremented by 4kb.
+ However, when a page is freed, it will be added to the free list.
+ The reason for this is that there may be other pages above the freed page
+ that are still in use, so we cannot simply decrement 
+\family typewriter
+page_end
+\family default
+.
+ The free list is maintained as a linked list, and all new allocations check
+ this first when looking for a free page.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:freelist"
+
+\end_inset
+
+ shows the state of memory after several allocations and deallocations have
+ been performed.
+ Note that the links are stored in the free pages themselves, which avoids
+ the need for a separate data structure stored outside of the memory managed
+ by these functions.
+\end_layout
+
+\begin_layout Standard
+The reason why this allocation scheme is so simple is that all of the blocks
+ are of the same size, so it is not necessary to cater for holes of different
+ sizes when looking for space to allocate.
+ More general allocation schemes discussed in lectures such as first fit,
+ best fit, and buddy allocation involve more sophisticated logic, since
+ they must attempt to minimise space wastage that comes about from having
+ holes of different sizes that cannot always be completely filled.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename freelist.eps
+	width 80col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:freelist"
+
+\end_inset
+
+Free list allocation
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Mapping pages
+\end_layout
+
+\begin_layout Standard
+Setting up of page table entries is performed by the 
+\family typewriter
+map_page
+\family default
+ function in 
+\family typewriter
+page.c
+\family default
+, which is relatively straightforward.
+ For a given logical to physical address mapping, it first calculates the
+ logical page number of that address, and then the positions within the
+ page directory and appropriate page table that correspond to that address.
+ If the page table does not exist, it created and added to the page directory.
+ The entry within the page table corresponding to the logical address is
+ then set to the specified physical address, combined with the permission
+ flags and presence bit.
+ The 
+\family typewriter
+map_new_pages
+\family default
+ function automates the process of allocating multiple new pages and adding
+ mappings for them.
+\end_layout
+
+\begin_layout Standard
+Within 
+\family typewriter
+start_process
+\family default
+, a page table is created for each new process, and mappings are established
+ for the stack memory, as well as certain memory within the kernel.
+ This latter area of memory is only accessible to code running in kernel
+ mode, with the exception of the memory between 
+\family typewriter
+kernel_code_start
+\family default
+ and 
+\family typewriter
+kernel_code_end
+\family default
+.
+ These values correspond to the region in memory containing the actual compiled
+ code of the kernel; this needs to be readable by the process in order to
+ execute its instructions, since at this point we only support processes
+ that execute code that is already compiled into the kernel, as opposed
+ to loaded from separate executable files.
+\end_layout
+
+\begin_layout Standard
+In this version of the kernel, we need to make a special exception for two
+ other areas of memory: the video memory, and the kernel's global variables.
+ The reason for this is that processes currently output data by calling
+ the 
+\family typewriter
+write_to_screen
+\family default
+ function.
+ This writes directly to video memory, and uses the 
+\family typewriter
+xpos
+\family default
+ and 
+\family typewriter
+ypos
+\family default
+ global variables.
+ All processes must be able to write to this memory in order to display
+ their output.
+ This is only a temporary measure until we have support for system calls,
+ which we shall discuss in the next section.
+\end_layout
+
+\begin_layout Standard
+The region of logical memory now used for the stack is the same for each
+ process.
+ This is made possible by the fact that we are able to map this logical
+ address range to different sets of physical pages for each process.
+ Because all processes have their stack start at the same logical address,
+ we no longer have a need for the 
+\family typewriter
+allocate_memory
+\family default
+ function that was previously used to give each a process a different area
+ to store its stack.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:System-calls"
+
+\end_inset
+
+System calls
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+syscallsversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+syscall.c
+\family default
+.
+\end_layout
+
+\begin_layout Plain Layout
+See also: Tanenbaum, sections 1.4, 2.6.8
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:User-kernel-mode"
+
+\end_inset
+
+ introduced the concepts of user mode and kernel mode.
+ Processes run in user mode, and are not able to perform privileged operations
+ or access areas of memory that belong to other processes or the kernel.
+ However, privileged operations are necessary for all applications, and
+ thus it is necessary for the kernel provide a safe, controlled way in which
+ these can be carried out on behalf of processes.
+ The mechanism for doing this is known as a 
+\emph on
+system call
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+A kernel must provide some set of system calls which are accessible to processes.
+ Each call is simply a function within the kernel that does something which
+ cannot be done by a normal process.
+ Examples include creating a new process, reading the contents of a file,
+ or writing text to the screen.
+ Because these functions must run in kernel mode however, they cannot simply
+ be called from a process using the standard function call mechanism.
+ Instead, they must use a different execution path which allows the processor
+ to temporarily switch into kernel mode while executing the function, and
+ then go back into user mode when it returns.
+\end_layout
+
+\begin_layout Standard
+Processes always run in user mode, but interrupt handlers run in kernel
+ mode.
+ For example, the timer handler, which calls 
+\family typewriter
+context_switch
+\family default
+, needs to run in kernel mode so that it can change to a different process
+ and arrange for the CPU to use that process's page directory instead of
+ that of the previously running process.
+ Similarly, the keyboard handler must run in kernel mode, as it is necessary
+ to interface with the keyboard controller in order to find out which key
+ has been pressed.
+ The interrupt handling mechanism is thus an ideal way to implement system
+ calls, because we can use the logic to switch between privilege levels
+ that is already there.
+\end_layout
+
+\begin_layout Standard
+In our kernel, we have chosen to use interrupt no.
+ 48 to represent system calls.
+ This is the lowest unused interrupt after the IRQs set up within 
+\family typewriter
+interrupts.c
+\family default
+.
+ Whenever a process wants to make a system call, it pushes the arguments
+ to the call on to its stack, in the same way as for normal function calls.
+ It then places a number identifying the system call to be made in a register,
+ and executes an instruction which forces an interrupt to occur.
+ From the programmer's perspective, all system calls look like regular functions
+; the difference is that they are implemented in the assembly file 
+\family typewriter
+calls.s
+\family default
+, which contains the instructions to set the call number and cause the interrupt.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename syscall.eps
+	width 90col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:syscall"
+
+\end_inset
+
+Control path for invoking a system call
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:syscall"
+
+\end_inset
+
+ shows the flow of control that occurs when a system call is made.
+ We have just described the stages that happen within the process, shown
+ in the top part of the diagram.
+ When the interrupt occurs, the CPU switches to kernel mode, and executes
+ the interrupt handler, which is actually implemented in assembler within
+ 
+\family typewriter
+start.s
+\family default
+.
+ This pushes the register values onto the stack, and then calls the 
+\family typewriter
+interrupt_handler
+\family default
+ function, which is implemented in C.
+ The registers that were put onto the stack are available as a parameter
+ to this function, as a 
+\family typewriter
+regs
+\family default
+ object.
+ The interrupt handler then calls the 
+\family typewriter
+syscall
+\family default
+ function, which inspects the registers to determine which system call was
+ requested, and then dispatches to the appropriate handler function.
+ In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:syscall"
+
+\end_inset
+
+, the system call being made is 
+\family typewriter
+write
+\family default
+, which is implemented by the handler function 
+\family typewriter
+syscall_write
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+The parameters to the system call may be accessed by looking at the process's
+ stack.
+ One of the saved registers is the 
+\emph on
+stack pointer
+\emph default
+, which the 
+\family typewriter
+syscall
+\family default
+ function uses to determine the location in memory of the parameters, which
+ it then passes to the handler function.
+ The handler for the system call then performs whatever actions are necessary,
+ which can include privileged operations such as writing to any area of
+ memory, since this code runs in kernel mode.
+ Once the handler function returns, control is passed backwards along the
+ same path, until it returns to the process that was previously executing.
+ In some cases, such as the 
+\family typewriter
+read
+\family default
+ or 
+\family typewriter
+exit
+\family default
+ system calls, the process may have been killed or suspended.
+ If this is the case, 
+\family typewriter
+syscall
+\family default
+ performs a context switch, so that a different process will be executed
+ when the interrupt handler returns.
+\end_layout
+
+\begin_layout Subsection
+The 
+\family typewriter
+write
+\family default
+ system call
+\end_layout
+
+\begin_layout Standard
+Up until this point, the test processes within our kernel have been using
+ the 
+\family typewriter
+write_to_screen
+\family default
+ function, called from 
+\family typewriter
+printf
+\family default
+, in order to output data to the screen.
+ This has required the processes to have permission to write directly to
+ video memory, and when setting up the page mappings in 
+\family typewriter
+start_process
+\family default
+ we had to make an special exception for the video memory and kernel global
+ variables, to access 
+\family typewriter
+xpos
+\family default
+ and 
+\family typewriter
+ypos
+\family default
+.
+ However, processes should not really have permission to modify the video
+ memory, since the kernel is supposed to control all access to hardware.
+\end_layout
+
+\begin_layout Standard
+With system calls, we can modify the output logic used by processes so that
+ everything that is printed to screen goes through the system call mechanism.
+ This allows the kernel to do the actual updates to video memory on behalf
+ of the processes.
+ And since the screen is a shared resource, using a system call also allows
+ the kernel to prevent race conditions by ensuring that only one update
+ is occurring at a time.
+ Race conditions like when two processes simultaneously call the 
+\family typewriter
+scroll
+\family default
+ function, which could lead to incorrect results, are thus avoided.
+\end_layout
+
+\begin_layout Standard
+In version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+syscallsversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel, the 
+\family typewriter
+syscall_write
+\family default
+ function in 
+\family typewriter
+syscalls.c
+\family default
+ is invoked whenever a process invokes the 
+\family typewriter
+write
+\family default
+ system call.
+ All it does is simply call 
+\family typewriter
+write_to_screen
+\family default
+, and returns the number of characters written.
+ Since this system call is now available, the 
+\family typewriter
+printf
+\family default
+ function in 
+\family typewriter
+libc.c
+\family default
+ has been updated to invoke 
+\family typewriter
+write
+\family default
+, instead of calling 
+\family typewriter
+write_to_screen
+\family default
+ directly.
+ The temporary code in 
+\family typewriter
+start_process
+\family default
+, which gave the process permission to write to video memory and kernel
+ data, has also been removed.
+\end_layout
+
+\begin_layout Standard
+In Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:C-library-functions"
+
+\end_inset
+
+, we mentioned that there were two versions of the 
+\family typewriter
+printf
+\family default
+ function: the regular one, and another called 
+\family typewriter
+kprintf
+\family default
+.
+ The latter is intended for use within the kernel itself, such as when we
+ need to print out debugging information from within interrupt handlers
+ or during initial kernel startup.
+ 
+\family typewriter
+kprintf
+\family default
+ calls 
+\family typewriter
+write_to_screen
+\family default
+ directly, just as 
+\family typewriter
+printf
+\family default
+ used to, and thus it can only be used when running in kernel mode.
+ The normal 
+\family typewriter
+printf
+\family default
+ can no longer be used from within kernel mode, since it invokes a system
+ call, and the way in which we have implemented system calls only permits
+ one to be active at a time.
+\end_layout
+
+\begin_layout Subsection
+Other system calls
+\end_layout
+
+\begin_layout Standard
+We have implemented a few other system calls to demonstrate common functionality
+ that is provided by most kernels.
+ The 
+\family typewriter
+getpid
+\family default
+ function simply returns the process identifier of the current process.
+ Since this is part of the 
+\family typewriter
+process
+\family default
+ object stored within the kernel's private memory, it cannot be directly
+ accessed from user mode.
+ The system call provides controlled access to this field, in that processes
+ can read it but not modify it.
+ Similar system calls are often provided for other process fields such as
+ the current working directory within the filesystem.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+exit
+\family default
+ system call is used by a process to terminate itself.
+ When this call is made, the 
+\family typewriter
+kill_process
+\family default
+ function is called, and the handler function returns the special value
+ 
+\family typewriter
+-ESUSPEND
+\family default
+, indicating to the 
+\family typewriter
+syscall
+\family default
+ dispatching function that the current process is no longer running, and
+ it should perform a context switch.
+ Processes should always call 
+\family typewriter
+exit
+\family default
+ as their last action, to indicate the kernel that they have no more instruction
+s to be executed.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Dynamic-memory-allocation"
+
+\end_inset
+
+Dynamic memory allocation
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+mallocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+buddy.c
+\family default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Virtually all programs need to dynamically allocate memory on a heap.
+ In C, this is done using the 
+\family typewriter
+malloc
+\family default
+ function, which sets aside an area of memory of the requested size, and
+ returns a pointer to the program.
+ This can be used to store data structures.
+ The lifetime of memory allocated in this manner is controlled by the program,
+ which calls 
+\family typewriter
+free
+\family default
+ when it no longer needs the memory.
+ This scheme is more flexible than using memory on the stack, because stack
+ frames disappear when their corresponding function call returns.
+\end_layout
+
+\begin_layout Standard
+There are many different ways to implement dynamic memory allocation.
+ In each case, a specific region of memory is designated as the heap, and
+ the 
+\family typewriter
+malloc
+\family default
+ and 
+\family typewriter
+free
+\family default
+ functions manage this according to whatever technique is in use.
+ The simplest possible implementation is to have 
+\family typewriter
+malloc
+\family default
+ keep track of the lowest unused address, and increment this whenever new
+ memory is allocated.
+ This works well for allocation but does not permit memory to be freed,
+ since there is no record kept of what blocks of memory have been given
+ to the application, other than the end of the last one.
+ We used this approach in the 
+\family typewriter
+allocate_memory
+\family default
+ function in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+processesversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel, where we needed a simple way of obtaining a memory region
+ to use as a stack when creating a process.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+First fit
+\emph default
+ and 
+\emph on
+best fit
+\emph default
+ are two schemes which keep track of the last allocated address, as well
+ as all of the blocks of memory which have been allocated.
+ When a block is freed, it is marked as unused, and new allocations will
+ first look at the list of free blocks to see if any of the required size
+ are available.
+ First fit simply takes the first block that is at least as big as the requested
+ size.
+ Best fit searches all of the free blocks until it finds the smallest one
+ that is large enough to store the requested block, in order to minimise
+ wastage.
+ Both of these schemes are discussed further in the lecture slides, and
+ in Tanenbaum section 4.2.2.
+\end_layout
+
+\begin_layout Standard
+A drawback of the first fit and best fit algorithms is that they can easily
+ lead to fragmentation, in which there are lots of small holes that cannot
+ be filled, even though they may collectively add up to enough memory to
+ satisfy new allocation requests.
+ In our kernel, we use a different scheme called 
+\emph on
+buddy allocation
+\emph default
+, which is designed to minimise fragmentation.
+\end_layout
+
+\begin_layout Subsection
+Buddy allocation
+\end_layout
+
+\begin_layout Standard
+Buddy allocation manages a region of memory by dividing it up into blocks
+ whose size is always a power of two.
+ Whenever an allocation request is made, the requested size is rounded up
+ to the nearest power of two, and a block of that size is allocated.
+ If the block size (after rounding) is less than that of the smallest free
+ block, then the free block is split up repeatedly until a block of the
+ appropriate size is obtained.
+\end_layout
+
+\begin_layout Standard
+Initially, the memory region managed by the buddy allocator is treated as
+ one large block of size 
+\begin_inset Formula $2^{k}$
+\end_inset
+
+, for some value of 
+\begin_inset Formula $k$
+\end_inset
+
+.
+ As allocation requests are made, this can be split into blocks of size
+ 
+\begin_inset Formula $2^{k-1}$
+\end_inset
+
+, each of which can optionally be split into blocks of size 
+\begin_inset Formula $2^{k-2}$
+\end_inset
+
+, and so forth.
+ Splitting is performed to minimise wasted space by only handing out blocks
+ of the smallest size necessary to fulfill an allocation request.
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:buddy"
+
+\end_inset
+
+ shows the layout of a 2mb memory region which is managed by buddy allocation,
+ and how the block divisions change as allocation requests come in.
+ In step 0, the memory is one large free block of 2mb.
+ In step 1, an allocation request is made for a size of 200kb.
+ This is rounded up to the nearest power of of two, which is 256kb.
+ Since 256kb is smaller than 2mb, the block is split in two, resulting in
+ two free blocks of size 1mb each.
+ The first of these is split again, resulting in two 512kb blocks.
+ Finally, the first 512kb block is split in two, with the first half marked
+ as allocated and returned to the program.
+\end_layout
+
+\begin_layout Standard
+In steps 2-4, more allocation requests come in.
+ Separate free lists for each block size are maintained, which allows the
+ allocator to determine whether it can hand out an existing block, or whether
+ it needs to look for a free block of a larger size and split that.
+ The second and third allocations both require 256kb blocks; for the second,
+ an existing free 256kb block can be used, but for the third, a larger block
+ must be split.
+ The fourth allocation needs a block of 512kb; this is obtained by splitting
+ the remaining 1mb block.
+\end_layout
+
+\begin_layout Standard
+When freeing memory, attempts are made to coalesce blocks together.
+ This is where the notion of 
+\emph on
+buddy
+\emph default
+ blocks becomes useful.
+ The buddy of a block is the other half of the larger block from which both
+ were obtained.
+ When freeing a block, we inspect its buddy to see if it is also free; if
+ so, it is possible to coalesce both into the larger block that they were
+ originally both part of, and update the free lists accordingly.
+ This is possible in steps 6 and 7 in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:buddy"
+
+\end_inset
+
+.
+ In the last case, two merges occur, since the 256kb blocks can be coalesced
+ into a 512kb block, and then this can be combined with the adjacent 512kb
+ block to form a 1mb block.
+ Larger blocks are more desirable, since they can be used to satisfy both
+ large and small allocation requests.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename buddy.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:buddy"
+
+\end_inset
+
+Buddy allocation
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Free list management
+\end_layout
+
+\begin_layout Standard
+As mentioned in the previous section, buddy allocation requires that separate
+ free lists be maintained for each block size.
+ One way of doing this is to use linked lists, and to store the links in
+ the free pages themselves.
+ This is not the only way of maintaining the lists, but it simplifies implementa
+tion because it avoids the need for a separate data structure outside the
+ region being managed that would need to grow and shrink dynamically.
+ Instead, it is sufficient to just have a fixed size array which stores
+ the pointer to the first block in each free list.
+ The array can be indexed by the power of two of the block size.
+ For example, the free list of 128kb blocks can be accessed by inspecting
+ array element 17, since 
+\begin_inset Formula $2^{17}$
+\end_inset
+
+ = 128kb.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:buddyfree"
+
+\end_inset
+
+ shows the free lists for a heap with several free blocks of size 128kb,
+ and one free block of 512kb.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename buddyfree.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:buddyfree"
+
+\end_inset
+
+Free list management for buddy allocation
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is one of numerous cases in which the lack of type safety provided
+ by C is actually an advantage.
+ Although treating a given location in memory as different type of data
+ depending on the context is a less 
+\begin_inset Quotes eld
+\end_inset
+
+clean
+\begin_inset Quotes erd
+\end_inset
+
+ way of programming than what higher-level languages tend to enforce, it
+ does allow optimisations that in certain cases are desirable.
+ This style of programming can take a bit of getting used to, but once you
+ start to think of types in C as just a convenience mechanism for accessing
+ memory, it makes more sense.
+ However, this approach can be more error-prone, and it is advisable to
+ avoid using it unless there is a real need to, due to performance or other
+ implementation concerns.
+ The lack of a separate memory allocator, since we are implementing one,
+ is an example of such a concern.
+\end_layout
+
+\begin_layout Subsection
+Memory regions
+\end_layout
+
+\begin_layout Standard
+Memory allocators work with a particular region of memory, rather than all
+ of the memory that is available.
+ The reason is that parts of memory are used for things other than the heap
+ - such as the stack and code segments of a process.
+ When using virtual memory, we can pick any address range we like for the
+ heap, and just make sure that this is mapped to physical memory upon process
+ creation.
+ 
+\family typewriter
+constants.h
+\family default
+ in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+mallocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel contains a constant called 
+\family typewriter
+PROCESS_DATA_BASE
+\family default
+, specifying the base of the data segment, which we use as the start of
+ the heap.
+ 
+\family typewriter
+PROCESS_DATA_MAX
+\family default
+ specifies the size of the heap given to each process (plus space for bookkeepin
+g info), and thus determines the largest block size available to the buddy
+ allocator.
+\end_layout
+
+\begin_layout Standard
+It is also useful to have a heap for the kernel, so that private data structures
+ used solely within the kernel can also be allocated dynamically.
+ The region in memory that this is stored in should be mapped by each process,
+ but using protection bits to make sure that it can only be accessed by
+ the kernel.
+ Thus, we can use this memory when inside a system call, in which the current
+ process's page directory is still active, but not directly from within
+ the process itself.
+ In our kernel, we have chosen to reserve the address range 2-6mb for a
+ 4mb kernel heap, which is also managed by buddy allocation.
+\end_layout
+
+\begin_layout Standard
+The buddy allocator within our kernel, implemented in 
+\family typewriter
+buddy.c
+\family default
+, is parameterised by the address range it is managing.
+ By this, we mean that all of the functions take a parameter specifying
+ the range of memory, as well as references to the free lists and an additional
+ array indicating what areas of memory are used, and what sized blocks they
+ are part of.
+ When calling 
+\family typewriter
+malloc
+\family default
+ and 
+\family typewriter
+free
+\family default
+, these call the buddy allocation routines with a data structure that uses
+ 
+\family typewriter
+PROCESS_DATA_BASE
+\family default
+ and 
+\family typewriter
+PROCESS_DATA_MAX
+\family default
+ to define the region of memory being managed.
+ There are also kernel-specific versions of these functions, named 
+\family typewriter
+kmalloc
+\family default
+ and 
+\family typewriter
+kfree
+\family default
+, which use the 2-6mb address range, and have separate free lists and memory
+ usage maps.
+ The latter are global to the whole system, while the process heap is specific
+ to each process.
+\end_layout
+
+\begin_layout Section
+Pipes and file descriptors
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+filedesc.c
+\family default
+ and 
+\family typewriter
+pipe.c
+\family default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Any operating system needs to provide a way for processes to communicate
+ with each other and transfer data to and from other entities, such as files
+ and network connections.
+ There are many different ways in which this can be implemented, but the
+ one chosen by UNIX is the concept of 
+\emph on
+file descriptors
+\emph default
+.
+ These act like references to objects which can be created, manipulated,
+ and destroyed by processes.
+\end_layout
+
+\begin_layout Standard
+You'll likely be familiar with the 
+\family typewriter
+InputStream
+\family default
+ and 
+\family typewriter
+OutputStream
+\family default
+ classes from Java.
+ These are abstract classes which provide a generic way for a program to
+ read or write data from various types of streams, such as files, network
+ connections, and the terminal.
+ A program can be written that works in terms of these abstract classes,
+ without needing to know what type of stream the data is being transferred
+ through.
+ All the program deals with are methods like 
+\family typewriter
+read
+\family default
+, 
+\family typewriter
+write
+\family default
+, and 
+\family typewriter
+close
+\family default
+ - all of which work on different types of streams.
+\end_layout
+
+\begin_layout Standard
+File descriptors are the UNIX equivalent of Java's input and output streams.
+ Rather than being separated into two categories however, a file descriptor
+ may support both reading 
+\emph on
+and 
+\emph default
+writing, although some types support only one of these operations.
+ Just like Java's streams, the 
+\family typewriter
+read
+\family default
+, 
+\family typewriter
+write
+\family default
+, and 
+\family typewriter
+close
+\family default
+ functions can be used with file descriptors.
+ The way in which a file descriptor is created depends on its type; for
+ example, file descriptors corresponding to files are created using the
+ 
+\family typewriter
+open
+\family default
+ system call, and those representing sockets are created using the 
+\family typewriter
+socket
+\family default
+ system call.
+\end_layout
+
+\begin_layout Standard
+If you've done much C programming, you'll likely be familiar with using
+ these system calls.
+ In this section, we'll look at how they can be implemented within a kernel.
+ There are several different ways to implement them, but the technique we
+ use is similar to Java's approach of using different classes which each
+ provide their own implementations of the required methods.
+ Since C is not an object-oriented language though, we cannot use classes
+ as such, but we can get reasonably close to this approach by utilising
+ structs and function pointers.
+\end_layout
+
+\begin_layout Subsection
+File descriptors
+\end_layout
+
+\begin_layout Standard
+Under UNIX, each process has table of file descriptors associated with it.
+ Each file descriptor is identified by a small integral value, and so this
+ table is usually implemented as an array.
+ File descriptors are actually 
+\emph on
+references
+\emph default
+ rather than objects, and it is possible for two or more of them to reference
+ the same object.
+ Thus, the file descriptor table does not contain the objects themselves,
+ but simply pointers to them.
+ In our sample implementation we refer to these objects as 
+\emph on
+file handles
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+When a process starts, it always has three file descriptors open.
+ These are known as 
+\emph on
+standard input
+\emph default
+ (fd 0), 
+\emph on
+standard output
+\emph default
+ (fd 1), and 
+\emph on
+standard error
+\emph default
+ (fd 2).
+ When a program is run from the terminal, standard input is connected to
+ the user's keyboard, and standard output and error both refer to the screen.
+ The UNIX shell supports I/O redirection, where these can be changed to
+ refer to files or other processes using the standard 
+\family typewriter
+<
+\family default
+, 
+\family typewriter
+>
+\family default
+, and 
+\family typewriter
+|
+\family default
+ constructs.
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:fdtable"
+
+\end_inset
+
+ shows an example of a process which has four file descriptors open.
+ Standard input is coming from 
+\family typewriter
+input.txt
+\family default
+, standard output and error are both going to 
+\family typewriter
+output.txt
+\family default
+, and the process has another file open called 
+\family typewriter
+debug.log
+\family default
+ which is associated with file descriptor 3.
+ This situation could have arisen from a command such as the following:
+\end_layout
+
+\begin_layout LyX-Code
+./program < input.txt >& output.txt
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /Users/peter/Teaching/2008/sem2/os/svn/guide/fdtable.eps
+	width 50col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:fdtable"
+
+\end_inset
+
+A process's file descriptor table
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this figure, the boxes refer not to the actual files on disk, but to
+ 
+\emph on
+file handles
+\emph default
+, which as mentioned above are similar to 
+\family typewriter
+InputStream
+\family default
+ and 
+\family typewriter
+OutputStream
+\family default
+ objects in Java.
+ Each file handle keeps track of its position within the file, such that
+ the next 
+\family typewriter
+read
+\family default
+ or 
+\family typewriter
+write
+\family default
+ call will start from that position in the file.
+ Thus, when two file descriptors refer to a particular file handle, reading
+ from or writing to either of them will advance the file position.
+ For example, if the process prints one line of text to standard output,
+ then another to standard error, then the first and second line will appear
+ in 
+\family typewriter
+output.txt
+\family default
+ in the same order that they were printed.
+\end_layout
+
+\begin_layout Standard
+Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel implements this mechanism, and supports three types of file
+ handles.
+ The first type is 
+\family typewriter
+FH_SCREEN
+\family default
+, corresponding to a write-only file handle which outputs to the screen.
+ The other two types of handles are for pipes, which we shall discuss in
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Pipes"
+
+\end_inset
+
+.
+ The 
+\family typewriter
+filehandle
+\family default
+ struct defined in 
+\family typewriter
+kernel.h
+\family default
+ is as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+struct filehandle {
+\end_layout
+
+\begin_layout Plain Layout
+
+  int type;
+\end_layout
+
+\begin_layout Plain Layout
+
+  int refcount;
+\end_layout
+
+\begin_layout Plain Layout
+
+  write_fun *write;
+\end_layout
+
+\begin_layout Plain Layout
+
+  read_fun *read;
+\end_layout
+
+\begin_layout Plain Layout
+
+  destroy_fun *destroy;
+\end_layout
+
+\begin_layout Plain Layout
+
+  pipe_buffer *p; /* for pipes */
+\end_layout
+
+\begin_layout Plain Layout
+
+};
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+write
+\family default
+, 
+\family typewriter
+read
+\family default
+, and 
+\family typewriter
+destroy
+\family default
+ fields of this structure are function pointers.
+ When a file handle is created, the constructor function assigns these fields
+ to the functions that implement the logic for that particular type of file
+ handle.
+ This is where the similarity with Java's stream classes lie; these function
+ pointers are like virtual functions that the user can override when implementin
+g a subclass.
+ The prototypes that these functions must match are given just above the
+ 
+\family typewriter
+filehandle
+\family default
+ definition in 
+\family typewriter
+kernel.h
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+An example of a constructor function is the 
+\family typewriter
+new_screen_handle
+\family default
+ function in 
+\family typewriter
+filedesc.c
+\family default
+.
+ This creates a file handle struct as above, and sets the function pointers
+ to the 
+\family typewriter
+screen_*
+\family default
+ functions defined in that same file.
+ The main function of interest is 
+\family typewriter
+screen_write
+\family default
+; all this does is call the 
+\family typewriter
+write_to_screen
+\family default
+ function implemented in earlier versions of the kernel.
+ This will be executed whenever a process invokes the 
+\family typewriter
+write
+\family default
+ system call on a file descriptor which refers to a 
+\family typewriter
+filehandle
+\family default
+ struct that was created by this function.
+\end_layout
+
+\begin_layout Standard
+To see how these calls are dispatched, have a look at the implementations
+ of the 
+\family typewriter
+read
+\family default
+ and 
+\family typewriter
+write
+\family default
+ system calls in 
+\family typewriter
+syscalls.c
+\family default
+.
+ In this version of the kernel, they have been modified to work with file
+ descriptors.
+ They both first check that the file descriptor passed in is valid, and
+ then call the appropriate function pointer on the corresponding 
+\family typewriter
+filehandle
+\family default
+ object.
+ This is what allows a process to use these system calls for different types
+ of file handles, without having to care which implementation of the interface
+ is actually in use.
+\end_layout
+
+\begin_layout Standard
+In 
+\family typewriter
+filedesc.c
+\family default
+, there are some other functions for dealing with file handles.
+ One of these is the implementation of the 
+\family typewriter
+close
+\family default
+ system call, which a process invokes when it no longer needs a particular
+ file descriptor.
+ This removes the appropriate entry from the file descriptor table, and
+ decrements the reference count associated with the file handle.
+ The file handle will 
+\emph on
+only
+\emph default
+ be deleted if the reference count reaches 0, i.e.
+ when there are no other file descriptors referencing it.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Pipes"
+
+\end_inset
+
+Pipes
+\end_layout
+
+\begin_layout Standard
+Pipes are one of the most commonly used forms of inter-process communication
+ under UNIX.
+ You're probably familiar with using the UNIX shell to pipe the output of
+ one process to the input of another, e.g.
+\end_layout
+
+\begin_layout LyX-Code
+cat mysongs.txt | sort
+\end_layout
+
+\begin_layout Standard
+When you execute a command like this, the shell creates a pipe, and executes
+ two processes.
+ The file descriptors of the processes are set up by the shell such that
+ standard output (fd 1) of the first process writes to the pipe, and standard
+ input (fd 0) of the second process reads from it.
+ Thus, instead of the output of 
+\family typewriter
+cat
+\family default
+ going to the terminal, it is passed to 
+\family typewriter
+sort
+\family default
+, whose resulting output finally goes to the terminal.
+\end_layout
+
+\begin_layout Standard
+Within the kernel, a pipe is a separate object that is referenced from two
+ separate file handles.
+ One file handle is used for write-only access to the pipe, and the other
+ is used for read-only access.
+ These two file handles are referenced from the relevant file descriptors
+ of the processes.
+ When process 1 invokes the 
+\family typewriter
+write
+\family default
+ system call with fd 1, data will be written to the pipe.
+ When process 2 invokes the 
+\family typewriter
+read
+\family default
+ system call with fd 0, it will read data from the pipe.
+ This situation is depicted in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:pipe"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename pipe.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:pipe"
+
+\end_inset
+
+Two processes exchanging data via a pipe
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Just like other types of file handles, the pipe writer and reader both have
+ reference counts associated with them.
+ A common use case of pipes is that a parent process creates a pipe, and
+ then forks off a child process that uses one end of the pipe.
+ The parent and child can thus exchange data through the pipe in a single
+ direction.
+ A similar case is what the shell does in the above example; a pipe is created,
+ and two processes are forked off.
+ In both cases, the child processes inherit the file descriptors of the
+ parent, and thus the reference counts on the associated file handles are
+ incremented.
+\end_layout
+
+\begin_layout Standard
+In our implementation, we maintain reference counts for the file handles,
+ but not for the pipes.
+ Instead, pipes have two fields indicating whether they are open for reading
+ and/or writing.
+ When a pipe is initially created, both are set to true.
+ When either end of the pipe is closed, which occurs when the writer or
+ reader file handle is destroyed, the corresponding field is set to false.
+ A pipe can thus be freed once both ends have been closed.
+ Note that this scheme implies that there must only be a single pipe writer
+ and pipe reader file handle for each pipe.
+\end_layout
+
+\begin_layout Subsection
+Blocking
+\end_layout
+
+\begin_layout Standard
+When a process tries to read from a pipe, there may not be any data available.
+ In this situation, there are two choices: to have 
+\family typewriter
+read
+\family default
+ suspend the process until data becomes available, or to return immediately
+ and indicate that there is no data at the present time.
+ These two approaches are known as 
+\emph on
+blocking
+\emph default
+ and 
+\emph on
+non-blocking
+\emph default
+, respectively.
+\end_layout
+
+\begin_layout Standard
+The non-blocking approach is simpler to implement, but less convenient to
+ use.
+ All that the 
+\family typewriter
+read
+\family default
+ function needs to do is check the amount of data in the pipe, and return
+ immediately.
+ However, a process that cannot continue until it is able to read some data
+ must sit in a tight loop, continuously calling read.
+ This eats up CPU time that could otherwise be used more productively by
+ other processes.
+\end_layout
+
+\begin_layout Standard
+Blocking is generally preferable, since the process only needs to call 
+\family typewriter
+read
+\family default
+ once each time it needs some data, and can rely on the fact that the call
+ will not return until it has a useful result.
+ The process will be suspended until data becomes available in the pipe,
+ or the pipe is closed by the writer.
+ When either of these events occurs, the process is resumed, and the 
+\family typewriter
+read
+\family default
+ system call will be invoked again, this time returning a result.
+\end_layout
+
+\begin_layout Standard
+In the blocking case, the function that writes to the pipe must check if
+ there is a reader blocked on it that needs to be woken up.
+ To avoid duplicating this logic in every place where a pipe could be written
+ to, it is implemented in the 
+\family typewriter
+wake_up_reader
+\family default
+ function in 
+\family typewriter
+pipe.c
+\family default
+, which is called from both 
+\family typewriter
+write_to_pipe
+\family default
+ and 
+\family typewriter
+pipe_writer_destroy
+\family default
+.
+ As long as these two functions are the only ones used to add data to a
+ pipe or close the writing handle, readers will always be unblocked correctly.
+\end_layout
+
+\begin_layout Standard
+Under UNIX, most file descriptors support both blocking and non-blocking
+ operation.
+ The choice of which to use is a property of the file handle, and is set
+ using the 
+\family typewriter
+fcntl
+\family default
+ system call.
+ For simplicity however, this is not implemented in our kernel.
+\end_layout
+
+\begin_layout Subsection
+Example
+\end_layout
+
+\begin_layout Standard
+In version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel, two processes are started at boot time to demonstrate the
+ use of a pipe to exchange data between processes.
+ The functions 
+\family typewriter
+uppercase
+\family default
+ and 
+\family typewriter
+number_lines
+\family default
+ are both launched as processes within 
+\family typewriter
+kernel_main
+\family default
+, and a pipe is created to redirect the output of the first process to the
+ input of the second.
+ When these processes are run, 
+\family typewriter
+uppercase
+\family default
+ reads characters from the keyboard, converts them to uppercase, and writes
+ them to its standard output.
+ 
+\family typewriter
+number_lines
+\family default
+ places a line number at the beginning of each line.
+ The resulting output will look like the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+  0 THIS IS THE FIRST LINE
+\end_layout
+
+\begin_layout Plain Layout
+
+  1 AND HERE IS THE SECOND LINE
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In our implementation, we handle keyboard input using a pipe.
+ The 
+\family typewriter
+start_process
+\family default
+ function has been modified in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+to create a pipe for each new process, and assign a reader file handle to
+ standard input.
+ Within 
+\family typewriter
+kernel_main
+\family default
+, the global variable 
+\family typewriter
+input_pipe
+\family default
+ is assigned to the pipe created for the first process.
+ The 
+\family typewriter
+keyboard_handler
+\family default
+ function writes all characters typed by the user to this pipe, instead
+ of outputting them to the screen as was done in previous versions.
+ As a result, the process that reads from this pipe receives all data entered
+ by the user.
+ In Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:UNIX-style-process"
+
+\end_inset
+
+, we shall see how this can be used to implement an interactive command
+ line interface.
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:pipetest"
+
+\end_inset
+
+ depicts the configuration of pipes and processes used in this example.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename pipetest.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:pipetest"
+
+\end_inset
+
+Process/pipe arrangement set up in 
+\family typewriter
+kernel_main
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:The-pipe-system"
+
+\end_inset
+
+The 
+\family typewriter
+pipe
+\family default
+ system call
+\end_layout
+
+\begin_layout Standard
+Pipes can be created using the 
+\family typewriter
+pipe
+\family default
+ system call.
+ This takes a single parameter which is an array of two integers, each of
+ which will be set by the system call to refer to the reading and writing
+ file descriptor.
+ Once the pipe has been created, the process can then read from the pipe
+ using the first file descriptor, and write to it using the second.
+\end_layout
+
+\begin_layout Standard
+Since the most typical use of pipes is to transfer data from one process
+ to another, it is necessary to have a mechanism which allows a newly-created
+ pipe to become accessible to the second process.
+ This can be achieved using the 
+\family typewriter
+fork
+\family default
+ system call, which duplicates a copy of a process.
+ The child process created by 
+\family typewriter
+fork
+\family default
+ has a copy of the parent's memory, as well as a copy of all of its file
+ descriptors.
+ This means that the parent and child both reference the same set of file
+ handles.
+ The child thus has access to the pipe, as well as the parent.
+\end_layout
+
+\begin_layout Standard
+After calling 
+\family typewriter
+fork
+\family default
+, it is usual for the parent and child processes to both close the file
+ descriptors that they do not need.
+ In the case of a pipe, one will close the reading end, and another will
+ close the writing end.
+ Which is closed by the parent and child will depend on the direction of
+ data flow, e.g.
+ if the parent is writing and the child is reading, the parent process will
+ close the first file descriptor in the array, and the child will close
+ the second.
+ An example code snippet demonstrating the use of fork is as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+  int fds[2];
+\end_layout
+
+\begin_layout Plain Layout
+
+  pipe(fds);
+\end_layout
+
+\begin_layout Plain Layout
+
+  if (0 == fork()) { /* child */
+\end_layout
+
+\begin_layout Plain Layout
+
+    close(fds[1]);
+\end_layout
+
+\begin_layout Plain Layout
+
+    char buf[1024];
+\end_layout
+
+\begin_layout Plain Layout
+
+    int r = read(fds[0],buf,1024);
+\end_layout
+
+\begin_layout Plain Layout
+
+    /* ...
+ */
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  else { /* parent */
+\end_layout
+
+\begin_layout Plain Layout
+
+    close(fds[0]);
+\end_layout
+
+\begin_layout Plain Layout
+
+    write(fds[1],"Hello",5);
+\end_layout
+
+\begin_layout Plain Layout
+
+    /* ...
+ */
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel, the 
+\family typewriter
+pipe
+\family default
+ system call is implemented by the 
+\family typewriter
+syscall_pipe
+\family default
+ function in 
+\family typewriter
+pipe.c
+\family default
+.
+ The first thing this does is search through the file descriptor table of
+ the calling process to locate two unused file descriptors.
+ It then creates a pipe, as well as pipe reader and pipe writer file handles
+ referring to it.
+ The previously discovered free entries in the file descriptor table are
+ then updated to point to these, and the corresponding file descriptors
+ stored in the supplied array.
+ After this, the pipe can be used just like any other file descriptor using
+ the 
+\family typewriter
+read
+\family default
+ and 
+\family typewriter
+write
+\family default
+ system calls.
+ The implementation of 
+\family typewriter
+fork
+\family default
+ is discussed in the next section.
+\end_layout
+
+\begin_layout Subsection
+The 
+\family typewriter
+dup2
+\family default
+ system call
+\end_layout
+
+\begin_layout Standard
+Another system call that is useful in conjunction with pipes is 
+\family typewriter
+dup2
+\family default
+.
+ This allows a process to modify its file descriptor table by setting or
+ replacing a particular entry to contain a reference to another file handle.
+ The two parameters to this call specify the source and destination file
+ descriptor, and the destination entry in the file descriptor table is updated
+ to point to the same file handle as the source.
+ This is useful for changing the file handle associated with standard input,
+ output, or error so that when the process writes to these it can actually
+ read from or write to a file or pipe.
+ The implementation of this system call is given in 
+\family typewriter
+filedesc.c
+\family default
+.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:UNIX-style-process"
+
+\end_inset
+
+UNIX-style process management and filesystem access
+\end_layout
+
+\begin_layout Standard
+\noindent
+\align center
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "80col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+This section describes version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+unixprocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the sample kernel.
+ Most of the new code is in 
+\family typewriter
+filesystem.c
+\family default
+, 
+\family typewriter
+filesystem.h
+\family default
+, 
+\family typewriter
+unixproc.c
+\family default
+.
+ Several programs have also been added - 
+\family typewriter
+sh
+\family default
+, 
+\family typewriter
+ls
+\family default
+, 
+\family typewriter
+cat
+\family default
+, and 
+\family typewriter
+find
+\family default
+ which run under the kernel, and 
+\family typewriter
+fstool
+\family default
+ which runs under Linux.
+\end_layout
+
+\begin_layout Plain Layout
+See also: Tanenbaum, sections 1.3, 4.7, and 4.8
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The way in which process creation has been implemented in our kernel so
+ far via the 
+\family typewriter
+start_process
+\family default
+ function, which creates an entirely new process that is independent of
+ all others.
+ This function takes a parameter specifying the function that the process
+ should run.
+ Once created, it has no way to interact with other processes, unless we
+ add other code within the kernel to set this up.
+ An example of such code was given in the 
+\family typewriter
+kernel_main
+\family default
+ method of version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+filedescversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the code, in which a pipe was created to link two processes together.
+\end_layout
+
+\begin_layout Standard
+This technique is very limiting, for a couple of reasons.
+ Firstly, it would be preferable to allow processes to set up their inter-proces
+s communication mechanisms like pipes with other processes directly.
+ The use of 
+\family typewriter
+pipe
+\family default
+ and 
+\family typewriter
+fork
+\family default
+ discussed in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:The-pipe-system"
+
+\end_inset
+
+ is an example of this, and is the most common way for processes to interact
+ under UNIX.
+ Thus, we should provide an implementation of the 
+\family typewriter
+fork
+\family default
+ system call to enable this to happen, which will be a separate mechanism
+ to the 
+\family typewriter
+start_process
+\family default
+ function that has been used so far.
+\end_layout
+
+\begin_layout Standard
+The second limitation of our current approach is that the code that a process
+ runs must be compiled into the kernel.
+ This is not normally practical, since most operating systems allow you
+ to compile and run your own programs on them, without having to recompile
+ the kernel itself.
+ UNIX provides a system call named 
+\family typewriter
+execve
+\family default
+ which instead allows you to specify the name of a program stored in the
+ filesystem that should be run.
+ This is how all processes are run under UNIX.
+ It also implies that we need a filesystem.
+\end_layout
+
+\begin_layout Standard
+Real filesystems can be quite complex to implement, and are outside the
+ scope of what we can reasonably hope to cover in detail here.
+ What we shall do instead is to provide a very minimal 
+\begin_inset Quotes eld
+\end_inset
+
+filesystem
+\begin_inset Quotes erd
+\end_inset
+
+ which is simply a data structure in memory that supports read-only access.
+ This can be implemented as a normal tree data structure.
+ The functions that we'll use to access these simply need to take a path
+ name and use that to traverse through the tree looking for the file that
+ matches the names within the path.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+In this section, and in version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+unixprocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the code, the only functions we'll use for accessing the filesystem are
+ those that directly access the tree in memory.
+ These can be used within the kernel, which has full access to memory, but
+ cannot be used from processes due to memory protection.
+ Your task for practical 3 is to implement a set of system calls that processes
+ can use to access the filesystem.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Filesystem organisation
+\end_layout
+
+\begin_layout Standard
+There are two problems that we need to solve in order to have something
+ approximating a filesystem.
+ The first is deciding how the data is to be organised, and the second is
+ how to make that data accessible to the kernel.
+ In this section we shall look at the first problem.
+ For this, we'll use what is perhaps the simplest way of storing file data,
+ which is to simply concatenate a collection of files together, with a simple
+ indexing mechanism that allows us to find out the position of a file with
+ a given name.
+\end_layout
+
+\begin_layout Standard
+Two structures are defined in 
+\family typewriter
+filesystem.h
+\family default
+ - 
+\family typewriter
+directory_entry
+\family default
+ and 
+\family typewriter
+directory
+\family default
+.
+ The first contains several fields that are used to describe a file or directory
+, such as its name, size, and location.
+ The latter refers to the offset within memory, relative to the start of
+ the filesystem data, at which the file or directory begins.
+ For directory entries that correspond to files, the location contains the
+ actual contents of a file.
+ For directory entries corresponding to directories, the location contains
+ a 
+\family typewriter
+directory
+\family default
+ structure specifying the number of entries, directly followed by an array
+ of 
+\family typewriter
+directory_entry
+\family default
+ structures.
+ The type of an entry is given by its 
+\family typewriter
+type
+\family default
+ field, which is always set to either 
+\family typewriter
+TYPE_DIR
+\family default
+ or 
+\family typewriter
+TYPE_FILE
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+A program called 
+\family typewriter
+fstool
+\family default
+ is supplied with this version of the kernel.
+ Its job is to build up a filesystem image in memory, based on a directory
+ hierarchy on your (real) filesystem.
+ The above data structures are used to represent files and directories within
+ the image, each of which is placed directly one after the other.
+ This data is then written to a file.
+ To build a filesystem image, run the program as follows:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+fstool -build <imagefile> <directory>
+\end_layout
+
+\begin_layout Subsection
+Getting filesystem data into memory
+\end_layout
+
+\begin_layout Standard
+Once we have a file on disk with the contents of our filesystem, we need
+ a way to make it accessible to the kernel.
+ One way would be to copy this data to a hard disk, and then have the kernel
+ use the appropriate hardware interfaces to read data from the disk.
+ Under 
+\family typewriter
+qemu
+\family default
+, we could specify that the image file should be treated as a hard disk
+ image, making this approach feasible for our test environment.
+ However, this approach would be a bit more complicated to implement, since
+ it would be necessary to add functionality for reading from disk, and the
+ logic for traversing the tree would be somewhat complex because it would
+ need to access the data block-by-block.
+\end_layout
+
+\begin_layout Standard
+A simpler alternative is to simply load the whole filesystem into memory
+ at kernel boot time.
+ This is feasible for small filesystems, and is commonly referred to as
+ a 
+\emph on
+RAM disk
+\emph default
+.
+ The reason that this is simpler is because the kernel can just treat the
+ data as a normal data structure which can be accessed directly from memory.
+ The traversal logic for locating a file and accessing its contents simply
+ needs to work directly with data that is already in memory.
+\end_layout
+
+\begin_layout Standard
+The GRUB boot loader includes a feature called 
+\emph on
+modules
+\emph default
+, which are files that are loaded into memory along with the kernel at boot
+ time.
+ In order to get the filesystem data into memory, it is necessary to copy
+ the image file onto the boot disk, and to set an option in GRUB's configuration
+ file that asks it to load this at boot.
+ The boot disk image mentioned in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Compiling-and-running"
+
+\end_inset
+
+ already has the configuration file set appropriately, and in fact there
+ is an empty file in that disk image called 
+\family typewriter
+filesystem.img
+\family default
+.
+ GRUB has been loading this all along, it's just that it has not contained
+ any data and we have not been making use of it.
+\end_layout
+
+\begin_layout Standard
+In this version of the code, 
+\family typewriter
+mkbootimage.sh
+\family default
+ has been modified to create a filesystem image from a directory adjacent
+ to the source directory in the hierarchy.
+ In order to build this successfully, you will also need the 
+\family typewriter
+testfiles
+\family default
+ directory supplied as part of the sample code, located in source distribution
+ at:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://adelaideos.sourceforge.net/
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The build script copies the compiled versions of the supplied programs (mentione
+d in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Putting-it-all"
+
+\end_inset
+
+) to the 
+\family typewriter
+testfiles/bin
+\family default
+ directory, and then uses 
+\family typewriter
+fstool
+\family default
+ to create a file called 
+\family typewriter
+filesystem.img
+\family default
+ with the complete contents of this directory.
+ This is then copied to 
+\family typewriter
+grub.img
+\family default
+, so that the boot loader can load this file into memory at startup time.
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+kernel_main
+\family default
+ function in this version takes an additional parameter which contains several
+ pieces of information passed to the kernel from GRUB.
+ One of these is the location of the filesystem in memory, which gets loaded
+ directly after the kernel
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Since we're using a hard-coded value of 2Mb for the start of kernel private
+ memory, problems will arise if the filesystem image goes beyond this limit,
+ and thus only small filesystems (< 500k or so) should be used.
+ It would be possible to get around this by having the kernel figure out
+ where to start its primary memory region based on where the filesystem
+ data ends.
+\end_layout
+
+\end_inset
+
+.
+ During initialisation, this location is assigned to the global variable
+ 
+\family typewriter
+filesystem_start
+\family default
+, which is used by other functions whenever they need to access data in
+ the filesystem.
+ All of the other logic necessary to locate files is implemented in 
+\family typewriter
+filesystem.c
+\family default
+.
+ In particular, 
+\family typewriter
+get_directory_entry
+\family default
+ can be used to locate a file or directory within the filesystem image,
+ e.g.
+ when 
+\family typewriter
+execve
+\family default
+ needs to load a program into memory.
+\end_layout
+
+\begin_layout Subsection
+The 
+\family typewriter
+fork
+\family default
+ system call
+\end_layout
+
+\begin_layout Standard
+The job of 
+\family typewriter
+fork
+\family default
+ is to create a copy of the calling process.
+ The new process becomes a child of the current one, and contains an exact
+ copy of all process state.
+ After the call returns, both continue on from the same point, but can branch
+ out into different code paths by inspecting the return value of 
+\family typewriter
+fork
+\family default
+.
+ File descriptors are also copied, but the file handles aren't - they are
+ shared.
+ So the child process has a reference to all of the file handles that the
+ parent process has.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:fork"
+
+\end_inset
+
+ shows an example of a parent and child process after 
+\family typewriter
+fork
+\family default
+ has been executed.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /Users/peter/Teaching/2008/sem2/os/svn/guide/fork.eps
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:fork"
+
+\end_inset
+
+Parent and child process after 
+\family typewriter
+fork
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+unixprocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+of the kernel contains an implementation of 
+\family typewriter
+fork
+\family default
+ in 
+\family typewriter
+process.c
+\family default
+.
+ The first thing this does it create the child process with a unique process
+ id, and then copies across several fields of the parent's process object.
+ These fields include the start and end values of the text, data, and stack
+ segments.
+ The actual contents of these segments themselves must then be copied.
+ This is done by creating a new page directory for the child process, which
+ maps the same set of logical addresses, but to a distinct set of physical
+ pages.
+ The physical pages are an exact copy of those referenced by the parent's
+ page directory.
+ The only exception to this is the kernel memory, which stays the same and
+ is identity mapped by the child process.
+\end_layout
+
+\begin_layout Standard
+The file descriptor table is then copied from the parent to the child.
+ For each of the file handles, the reference count is incremented, so that
+ the kernel is able to keep track of the fact that there are now additional
+ references to each of the file handles.
+ When the parent or child process later exits, or closes any of these file
+ descriptors, these reference counts will be decremented, and the file handles
+ will only be freed when there are no more references to them.
+\end_layout
+
+\begin_layout Standard
+These are the main steps that fork needs to execute.
+ Once it returns, the parent will see a return value from the 
+\family typewriter
+fork
+\family default
+ call that is equal to the child's process id.
+ The child will see a return value of 0, which is arranged by having 
+\family typewriter
+fork
+\family default
+ set the appropriate value in the child's stack segment just before exiting.
+ After the call returns, both processes may continue execution independently,
+ taking whatever actions they like.
+ Often this will involve some form of interaction between the parent and
+ child, such as transferring data via a pipe, or having the parent wait
+ for the child to complete.
+\end_layout
+
+\begin_layout Subsection
+The 
+\family typewriter
+execve
+\family default
+ system call
+\end_layout
+
+\begin_layout Standard
+This system call causes a process to start running a different 
+\emph on
+program
+\emph default
+, i.e.
+ sequence of instructions.
+ It takes a parameter specifying the filesystem path of the program, which
+ is then used to locate the program on disk and load it into memory.
+ The data contained in this file is mapped into the process's address space,
+ so that it can access both the instructions and data stored in the executable
+ file.
+ This mechanism allows users to supply their own programs to run on an operating
+ system, without being limited to code that is already compiled into the
+ kernel, which is what we have been doing up until now.
+\end_layout
+
+\begin_layout Standard
+In addition to loading a new program, 
+\family typewriter
+execve
+\family default
+ also permits a small amount of information to be passed to the program
+ to help with initialisation.
+ Under most UNIX systems, this is in the form of command line arguments
+ and environment variables, both of which are collections of strings.
+ These usually contain configuration information and the names of files
+ that the program should use.
+ To simplify the implementation of 
+\family typewriter
+execve
+\family default
+, our kernel does not support environment variables, and only allows the
+ passing of command line arguments.
+\end_layout
+
+\begin_layout Standard
+The way in which these arguments are passed to the process is via the stack.
+ Whenever a function call is made in C, the parameters are pushed onto the
+ stack, and then the processor enters the code for the function.
+ Thus, a function that wishes to access its parameters just needs to look
+ at the portion of the stack that comes directly below its activation record.
+ Since the 
+\family typewriter
+main
+\family default
+ function is the first C function called in a program however, we need to
+ set up the stack ourselves, so that it can access the parameters just like
+ it had been called from other C code.
+ For this reason, 
+\family typewriter
+execve
+\family default
+ must build up the data for the first part of the program's stack in memory,
+ containing all of the command line arguments passed to the call.
+ The technique we use for doing this is very similar that of MINIX, as described
+ in Tanenbaum section 4.7.5.
+\end_layout
+
+\begin_layout Standard
+Once the arguments have been set up, 
+\family typewriter
+execve
+\family default
+ completely replaces the process's text segment with the contents of the
+ specified file.
+ The data segment is resized to 0 bytes, because at startup the program
+ does not use any heap memory; it can later expand this using the 
+\family typewriter
+brk
+\family default
+ system call if needed.
+ The stack segment can be re-used, except that the argument data prepared
+ previously must be copied in to end of the stack segment so that the 
+\family typewriter
+main
+\family default
+ function can access it.
+ Finally, the saved registers for the process are re-initialised such that
+ the instruction pointer refers to the first instruction in the program.
+\end_layout
+
+\begin_layout Standard
+All programs that are launched via 
+\family typewriter
+exec
+\family default
+ first begin execution in an assembly routine called 
+\family typewriter
+start
+\family default
+, defined in 
+\family typewriter
+crtso.s
+\family default
+.
+ This performs any initialisation that needs to be done before 
+\family typewriter
+main
+\family default
+ begins, such as setting up the initial heap data for 
+\family typewriter
+malloc
+\family default
+.
+ It is this routine which calls 
+\family typewriter
+main
+\family default
+.
+ However, it does not actually push any arguments on to the stack, because
+ they have already been put there be 
+\family typewriter
+execve
+\family default
+.
+ The 
+\family typewriter
+start
+\family default
+ function also handles the case where the 
+\family typewriter
+main
+\family default
+ function returns, by calling 
+\family typewriter
+exit
+\family default
+ to terminate the process with the exit status returned from 
+\family typewriter
+main
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+All of the file descriptors that the process owns stay exactly the same,
+ so the program that is run may use them to output to whatever file handles
+ they reference, such as pipes to other processes.
+ It is also worth noting that 
+\family typewriter
+exec
+\family default
+ does not return to its caller unless it fails, since upon success the program
+ that called 
+\family typewriter
+exec
+\family default
+ no longer exists, and the new one is run instead.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Putting-it-all"
+
+\end_inset
+
+Putting it all together
+\end_layout
+
+\begin_layout Standard
+This last version of the kernel contains many of the essential elements
+ of UNIX.
+ While it is certainly a long way from doing everything that a normal UNIX
+ system can do, the parts that we have demonstrated are perhaps the most
+ important aspects.
+ With a basic filesystem, the ability to launch processes via 
+\family typewriter
+fork
+\family default
+ and 
+\family typewriter
+execve
+\family default
+, as well as support for pipes, you can experiment with numerous common
+ things that can be done under UNIX.
+\end_layout
+
+\begin_layout Standard
+To demonstrate how some of these features can be used, Version 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+unixprocversion
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset space ~
+\end_inset
+
+ of the source code contains a number of programs that can be run on the
+ kernel.
+ These include a basic shell, as well as a few basic commands such as 
+\family typewriter
+ls
+\family default
+, 
+\family typewriter
+cat
+\family default
+, and 
+\family typewriter
+find
+\family default
+.
+ The shell is launched on startup, by having the 
+\family typewriter
+kernel_main
+\family default
+ function create a process that uses 
+\family typewriter
+execve
+\family default
+ to start running a shell.
+ Once inside the shell, you can run other programs simply by typing their
+ name.
+ The shell looks in the 
+\family typewriter
+/bin
+\family default
+ directory on the filesystem when it is asked to run a program.
+\end_layout
+
+\begin_layout Standard
+You can add other programs by creating additional C source files, and adding
+ them to the 
+\family typewriter
+PROGRAMS
+\family default
+ variable in the Makefile.
+ To have these copied on to the filesystem image with the other programs,
+ you should also modify the 
+\family typewriter
+mkbootimage.sh
+\family default
+ script in order to ensure they are copied into the bin directory.
+ These other programs may then be launched simply by typing their name from
+ the shell.
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+If you've read this far, you've hopefully gotten a reasonably good understanding
+ of how a basic operating system kernel can be put together.
+ What we've discussed here is just one way of going about it - there are
+ many, many other ways, and indeed this area has been a subject of much
+ research (and debate!) for a very long time.
+ The point of this guide is not so much to show you the 
+\begin_inset Quotes eld
+\end_inset
+
+best
+\begin_inset Quotes erd
+\end_inset
+
+ way of doing things, but to demonstrate how to get started learning about
+ the internals of operating systems, and perhaps convince you that writing
+ or modifying one is something that is not necessarily any harder than with
+ any other complex piece of software.
+\end_layout
+
+\begin_layout Standard
+Whether or not you end up doing any operating system development in the
+ future, it's very useful to have an understanding of how a kernel works
+ internally.
+ This knowledge can help you write better applications, by taking into account
+ the interaction that occurs between user-level processes and the kernel,
+ as well as how the kernel manages memory and other resources internally.
+ The different layers that modern software environments are structured into
+ each have an impact on overall system functionality and performance, and
+ sometimes achieving particular goals requires you to modify, or at least
+ understand, the layers below what you normally work with.
+\end_layout
+
+\begin_layout Standard
+If you are interested in learning more about OS internals, the textbook
+ for this course has a much more in-depth discussion of the issues we've
+ covered here, as well as an implementation of a fully-fledged UNIX system,
+ MINIX.
+ It also contains a wide ranging discussion on a lot of the higher-level
+ design issues that operating system developers face, and the reasoning
+ behind design choices in modern operating systems.
+ You are encouraged to make use of this book, as it will help you further
+ to understand the concepts we're teaching in this course.
+\end_layout
+
+\end_body
+\end_document

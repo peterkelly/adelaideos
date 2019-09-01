@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+            "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>AdelaideOS</title>
+</head>
+
+<body>
+
+<h1>AdelaideOS</h1>
+
+AdelaideOS is a small operating system kernel designed for teaching
+purposes. It was developed in 2008 for use in the <a
+href="http://www.cs.adelaide.edu.au/users/third/os/">operating
+systems</a> course at <a href="http://www.cs.adelaide.edu.au">Adelaide University</a>.<p>
+
+<p align="center"><a href="screenshot-big.png"><img
+src="screenshot.png" alt="AdelaideOS screenshot" border="0"></a></p>
+
+
+
+
+The kernel is around 5,000 lines of code, and has the following features:
+
+<ul>
+<li>A minimal C library containing <tt>printf</tt> and several string-manipulation functions</li>
+<li>Dynamic memory allocation (<tt>malloc</tt>)</li>
+<li>Multitasking and memory protection</li>
+<li>UNIX-style process management using <tt>fork</tt>, <tt>execve</tt>, and <tt>waitpid</tt></li>
+<li>Interprocess communication using pipes message passing</li>
+<li>A read-only ramdisk-based filesystem</li>
+</ul>
+
+The code is split into nine different versions, each of which builds
+on the previous one and adds one or more new features. The purpose of
+this arrangement is to
+demonstrate how one can start with a very simple kernel and add
+features piece by piece. It also permits the kernel to be used as a
+teaching aid, whereby each new version of the kernel can be covered in
+a week, and at the end of the semester students will have seen how to
+construct many of the essential components of a UNIX-like operating
+system. A series of accompanying <a href="guide.pdf">lecture notes</a> explain the full
+details of the kernel's operation, and can be used as a study guide by
+students while working through a course.<p>
+
+The breakdown of features introduced in each version are as follows:<p>
+
+<ul>
+<li>Version 1: Displays "Hello world", and illustrates the use of
+  keyboard &amp; timer interrupt handlers</li>
+
+<li>Version 2: Introduces a few basic C library functions such as such
+as <tt>memset</tt>, <tt>strlen</tt>, <tt>strcmp</tt>, and <tt>printf</tt></li>
+
+<li>Version 3: Initial multitasking support. All processes run in
+kernel mode, and have direct acceess to physical memory</li>
+
+<li>Version 4: Virtual memory and memory protection. All processes run
+in user mode and can only access memory mapped into their own private
+address space</li>
+
+<li>Version 5: System calls</li>
+
+<li>Version 6: <tt>malloc</tt> implementation using buddy allocation</li>
+
+<li>Version 7: Support for pipes and I/O redirection via file
+descriptors</li>
+
+<li>Version 8: <tt>fork</tt> and <tt>exec</tt>, plus a basic filesystem</li>
+
+<li>Version 9: Solutions to the two practical exercises: message
+passing and POSIX-style filesystem access</li>
+</ul>
+
+The source code for AdelaideOS is in the public domain.
+
+<h1>Download</h1>
+
+<ul>
+  <li><a href="http://sourceforge.net/projects/adelaideos/files/adelaideos-1.0.tar.bz2/download">AdelaideOS source code, release 1.0</a></li>
+  <li><a href="guide.pdf">AdelaideOS kernel development guide</a></li>
+  <li><a href="prac2.pdf">Practical exercise: Inter-process communication</a></li>
+  <li><a href="prac3.pdf">Practical exercise: Filesystem access</a></li>
+</ul>
+
+Build instructions are given in the kernel development guide.<p>
+
+The nine different versions are all generated from a common
+source. The original source files and scripts used to generate the different versions can
+be accessed from the <a href="https://adelaideos.svn.sourceforge.net/svnroot/adelaideos/">project SVN repository</a>.<p>
+
+For any questions about AdelaideOS, please contact <a href="http://www.cs.adelaide.edu.au/~pmk/">Peter Kelly</a>.<p>
+
+<p align="center">
+  <a href="http://www.adelaide.edu.au"><img src="adelaide.gif"
+  width="144" height="85" style="margin-right: 40px" align="middle"
+  border="0" alt="The University of Adelaide, Australia"></a>
+
+  <a href="http://www.sourceforge.net">
+<img src="http://sflogo.sourceforge.net/sflogo.php?group_id=332789&amp;type=16"
+width="150" height="40" alt="Get AdelaideOS at SourceForge.net. Fast,
+secure and Free Open Source software downloads" style="margin-left: 40px" align="middle" border="0"></a>
+</p>
+
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+# See man 5 aliases for format
+postmaster:    root
+# Added by installer for initial user
+root:	peter
+webmaster: root
