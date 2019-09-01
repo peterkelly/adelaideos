@@ -1,21 +1,16 @@
 #!/bin/bash
+set -eu
 BASE=`pwd`
 if [ ! -f GenVersions.class ]; then
   javac GenVersions.java
 fi
-rm -rf ver
-mkdir ver
-cp -pR testfiles ver/testfiles
-rm -f ver/testfiles/bin/*
-java -ea GenVersions source ver
-find ver -name .svn -exec rm -rf '{}' ';' >/dev/null 2>&1
-for i in ver/version*; do
+rm -rf versions
+mkdir versions
+cp -pR testfiles versions/testfiles
+java -ea GenVersions source versions
+for i in versions/version*; do
   chmod +x $i/mkbootimage.sh
 done
-rm -f ver/version1/link-user.ld
-rm -f ver/version2/link-user.ld
-rm -f ver/version3/link-user.ld
-rm -f ver/version4/link-user.ld
-rm -f ver/version5/link-user.ld
-rm -f ver/version6/link-user.ld
-rm -f ver/version7/link-user.ld
+for ((i = 1; i <= 7; i++)); do
+    rm -f ver/version$i/link-user.ld
+done

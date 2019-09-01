@@ -1,7 +1,9 @@
-#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
-\lyxformat 345
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass article
 \begin_preamble
 \lhead{COMP SCI 3004/7064 Operating Systems}
@@ -30,28 +32,57 @@
 \date{}
 \end_preamble
 \use_default_options false
+\maintain_unincluded_children false
 \language english
+\language_package default
 \inputencoding auto
-\font_roman times
-\font_sans default
-\font_typewriter default
+\fontencoding global
+\font_roman "times" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
+\use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
-
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
 \paperfontsize 12
 \spacing single
 \use_hyperref false
 \papersize a4paper
 \use_geometry true
-\use_amsmath 1
-\use_esint 0
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 0
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
+\use_indices false
 \paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
 \leftmargin 1in
 \topmargin 1in
 \rightmargin 1in
@@ -60,15 +91,19 @@
 \tocdepth 3
 \paragraph_separation skip
 \defskip medskip
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle fancy
 \listings_params "basicstyle={\ttfamily},columns=fullflexible,mathescape=false,showstringspaces=false"
 \tracking_changes false
 \output_changes false
-\author "" 
-\author "" 
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
 \end_header
 
 \begin_body
@@ -145,7 +180,7 @@ status open
 
 \begin_layout Plain Layout
 
-http://adelaideos.sourceforge.net/
+https://github.com/peterkelly/adelaideos
 \end_layout
 
 \end_inset
@@ -172,10 +207,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -301,7 +342,7 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="10" columns="2">
-<features>
+<features tabularvalignment="middle">
 <column alignment="left" valignment="top" width="1.5in">
 <column alignment="left" valignment="top" width="3.5in">
 <row>
@@ -535,7 +576,7 @@ Initial startup code and timer/interrupt handling.
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -731,7 +772,7 @@ And that's all we need to print Hello World.
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Compiling-and-running"
+name "subsec:Compiling-and-running"
 
 \end_inset
 
@@ -1277,7 +1318,7 @@ reference "sec:Multitasking"
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:C-library-functions"
+name "subsec:C-library-functions"
 
 \end_inset
 
@@ -1293,10 +1334,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -1488,10 +1535,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -1700,7 +1753,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2061,7 +2114,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2281,10 +2334,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "100col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -2343,10 +2402,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -2497,7 +2562,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2577,7 +2642,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2654,7 +2719,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2747,7 +2812,7 @@ The kernel can use this mechanism to selectively control which areas of
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:User-kernel-mode"
+name "subsec:User-kernel-mode"
 
 \end_inset
 
@@ -3096,7 +3161,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -3228,10 +3293,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -3273,7 +3344,7 @@ See also: Tanenbaum, sections 1.4, 2.6.8
 Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:User-kernel-mode"
+reference "subsec:User-kernel-mode"
 
 \end_inset
 
@@ -3360,7 +3431,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -3588,7 +3659,7 @@ start_process
 In Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:C-library-functions"
+reference "subsec:C-library-functions"
 
 \end_inset
 
@@ -3698,10 +3769,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -3952,7 +4029,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4025,7 +4102,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4187,10 +4264,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -4414,7 +4497,7 @@ status open
 \noindent
 \align center
 \begin_inset Graphics
-	filename /Users/peter/Teaching/2008/sem2/os/svn/guide/fdtable.eps
+	filename fdtable.eps
 	width 50col%
 
 \end_inset
@@ -4423,7 +4506,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4510,7 +4593,7 @@ FH_SCREEN
  Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Pipes"
+reference "subsec:Pipes"
 
 \end_inset
 
@@ -4697,7 +4780,7 @@ only
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Pipes"
+name "subsec:Pipes"
 
 \end_inset
 
@@ -4778,7 +4861,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -5073,7 +5156,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -5100,7 +5183,7 @@ kernel_main
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:The-pipe-system"
+name "subsec:The-pipe-system"
 
 \end_inset
 
@@ -5341,10 +5424,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "80col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -5462,7 +5551,7 @@ fork
  discussed in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:The-pipe-system"
+reference "subsec:The-pipe-system"
 
 \end_inset
 
@@ -5521,10 +5610,16 @@ hor_pos "c"
 has_inner_box 1
 inner_pos "t"
 use_parbox 0
+use_makebox 0
 width "100col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status open
 
 \begin_layout Plain Layout
@@ -5689,7 +5784,7 @@ modules
  The boot disk image mentioned in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Compiling-and-running"
+reference "subsec:Compiling-and-running"
 
 \end_inset
 
@@ -5724,7 +5819,7 @@ status open
 
 \begin_layout Plain Layout
 
-http://adelaideos.sourceforge.net/
+https://github.com/peterkelly/adelaideos
 \end_layout
 
 \end_inset
@@ -5737,7 +5832,7 @@ The build script copies the compiled versions of the supplied programs (mentione
 d in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Putting-it-all"
+reference "subsec:Putting-it-all"
 
 \end_inset
 
@@ -5860,7 +5955,7 @@ status open
 \noindent
 \align center
 \begin_inset Graphics
-	filename /Users/peter/Teaching/2008/sem2/os/svn/guide/fork.eps
+	filename fork.eps
 	width 100col%
 
 \end_inset
@@ -5869,7 +5964,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -6125,7 +6220,7 @@ exec
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Putting-it-all"
+name "subsec:Putting-it-all"
 
 \end_inset
 

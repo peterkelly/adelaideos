@@ -52,10 +52,10 @@ boot: default
 	./mkbootimage.sh
 
 %.o: %.c *.h
-	$(KPREFIX)gcc -m32 -fno-stack-protector -Wall -nostdinc -fno-builtin -c $<
+	$(KPREFIX)gcc -m32 -fno-plt -fno-pic -fno-stack-protector -Wall -nostdinc -fno-builtin -c $<
 
 %.o: %.s
-	$(KPREFIX)cpp $< | $(KPREFIX)as -o $*.o
+	$(KPREFIX)cpp $< | $(KPREFIX)as --32 -o $*.o
 
 kernel.bin: $(KERNEL_OBJECTS)
 	$(KPREFIX)ld -T link.ld -o kernel.bin $(KERNEL_OBJECTS)
