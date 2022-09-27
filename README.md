@@ -18,7 +18,7 @@ The kernel is around 5,000 lines of code, and has the following features:
 - Interprocess communication using pipes & message passing
 - A read-only ramdisk-based filesystem
 
-The code is split into nine different versions, each of which builds
+The code is split into [nine different versions](dist), each of which builds
 on the previous one and adds one or more new features. The purpose of
 this arrangement is to
 demonstrate how one can start with a very simple kernel and add
@@ -59,12 +59,13 @@ The source code for AdelaideOS is in the public domain.
 
 <h1>Download</h1>
 
-- [AdelaideOS source code, release 1.0](http://sourceforge.net/projects/adelaideos/files/adelaideos-1.0.tar.bz2/download)
+- [AdelaideOS source code, release 1.0](https://github.com/peterkelly/adelaideos/releases/download/v1.0/adelaideos-1.0.tar.bz2)
 - [AdelaideOS kernel development guide](web/guide.pdf)
 - [Practical exercise: Inter-process communication](web/prac2.pdf)
 - [Practical exercise: Filesystem access](web/prac3.pdf)
 
-Build instructions are given in the kernel development guide.
+Build instructions are given in the kernel development guide. **Note**: The build scripts only work
+on 32-bit Linux systems.
 
 The nine different versions are all generated from a common
 source. The original source files and scripts used to generate the different versions can
